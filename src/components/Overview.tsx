@@ -29,6 +29,10 @@ export default function Overview() {
 
   const top = rrls.slice(0, 15);
 
+  // Build lookup: source -> total_chunks from chunks_by_source data
+  const chunksBySource: Record<string, number> = {};
+  for (const r of chunks) chunksBySource[r.source] = r.total_chunks ?? 0;
+
   return (
     <div className="tab-content">
       <div className="stat-cards">
@@ -160,17 +164,17 @@ export default function Overview() {
               {
                 type: 'bar', name: 'RRLS %',
                 x: top.map(r => r.source),
-                y: top.map(r => (r.total_chunks ?? 0) > 0 ? ((r.confirmed ?? 0) / r.total_chunks!) * 100 : 0),
+                y: top.map(r => { const tc = chunksBySource[r.source] || 0; return tc > 0 ? ((r.confirmed ?? 0) / tc) * 100 : 0; }),
                 marker: { color: '#1f77b4' },
-                text: top.map(r => (r.total_chunks ?? 0) > 0 ? (((r.confirmed ?? 0) / r.total_chunks!) * 100).toFixed(1) + '%' : '0%'),
+                text: top.map(r => { const tc = chunksBySource[r.source] || 0; return tc > 0 ? (((r.confirmed ?? 0) / tc) * 100).toFixed(1) + '%' : '0%'; }),
                 textposition: 'outside',
               },
               {
                 type: 'bar', name: 'NTS %',
                 x: nts.slice(0, 15).map(r => r.source),
-                y: nts.slice(0, 15).map(r => (r.total_chunks ?? 0) > 0 ? ((r.confirmed ?? 0) / r.total_chunks!) * 100 : 0),
+                y: nts.slice(0, 15).map(r => { const tc = chunksBySource[r.source] || 0; return tc > 0 ? ((r.confirmed ?? 0) / tc) * 100 : 0; }),
                 marker: { color: '#ff7f0e' },
-                text: nts.slice(0, 15).map(r => (r.total_chunks ?? 0) > 0 ? (((r.confirmed ?? 0) / r.total_chunks!) * 100).toFixed(1) + '%' : '0%'),
+                text: nts.slice(0, 15).map(r => { const tc = chunksBySource[r.source] || 0; return tc > 0 ? (((r.confirmed ?? 0) / tc) * 100).toFixed(1) + '%' : '0%'; }),
                 textposition: 'outside',
               },
             ]}

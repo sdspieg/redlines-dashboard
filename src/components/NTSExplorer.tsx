@@ -24,12 +24,18 @@ export default function NTSExplorer() {
   const [showBreakdowns, setShowBreakdowns] = useState(false);
   const [crossDim1, setCrossDim1] = useState('nts_threat_type');
   const [crossDim2, setCrossDim2] = useState('tone');
+  const [minConfidence, setMinConfidence] = useState(7);
 
   useEffect(() => {
     load<Record<string, TaxonomyRow[]>>('nts_taxonomy.json').then(setTaxonomy);
     load<NTSSeverityRow[]>('nts_severity_monthly.json').then(setSeverity);
     load<NTSStatement[]>('nts_statements.json').then(setStatements);
   }, []);
+
+  // Filter statements by confidence
+  const filteredStatements = useMemo(() =>
+    minConfidence > 7 ? statements.filter(s => (s.overall_confidence ?? 0) >= minConfidence) : statements
+  , [statements, minConfidence]);
 
   const dims = Object.keys(taxonomy).sort((a, b) =>
     (DIM_LABELS[a] || a).localeCompare(DIM_LABELS[b] || b)
@@ -75,9 +81,9 @@ export default function NTSExplorer() {
 
   // Dynamic cross-tabulation
   const crossRows = useMemo(() => {
-    if (!statements.length || crossDim1 === crossDim2) return [];
+    if (!filteredStatements.length || crossDim1 === crossDim2) return [];
     const counts: Record<string, Record<string, number>> = {};
-    for (const s of statements) {
+    for (const s of filteredStatements) {
       const v1 = (s as unknown as Record<string, unknown>)[crossDim1] as string;
       const v2 = (s as unknown as Record<string, unknown>)[crossDim2] as string;
       if (!v1 || !v2) continue;
@@ -91,7 +97,7 @@ export default function NTSExplorer() {
       }
     }
     return result;
-  }, [statements, crossDim1, crossDim2]);
+  }, [filteredStatements, crossDim1, crossDim2]);
 
   const ct1Vals = [...new Set(crossRows.map(r => r.dim1))].sort();
   const ct2Vals = [...new Set(crossRows.map(r => r.dim2))].sort();
@@ -113,6 +119,16 @@ export default function NTSExplorer() {
         <select value={selectedDim} onChange={e => setSelectedDim(e.target.value)}>
           {dims.map(d => <option key={d} value={d}>{DIM_LABELS[d] || d}</option>)}
         </select>
+        <div className="confidence-slider">
+          <label>Confidence {'\u2265'}</label>
+          <input
+            type="range" min={7} max={10} step={1}
+            value={minConfidence}
+            onChange={e => setMinConfidence(Number(e.target.value))}
+          />
+          <span className="conf-value">{minConfidence}</span>
+        </div>
+        <span className="result-count">{filteredStatements.length.toLocaleString()} statements</span>
       </div>
 
       <div className="chart-row">

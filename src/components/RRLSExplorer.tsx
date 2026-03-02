@@ -39,6 +39,7 @@ export default function RRLSExplorer() {
   const [crossDim1, setCrossDim1] = useState('theme');
   const [crossDim2, setCrossDim2] = useState('audience');
   const [showBreakdowns, setShowBreakdowns] = useState(false);
+  const [minConfidence, setMinConfidence] = useState(7);
 
   useEffect(() => {
     load<Record<string, TaxonomyRow[]>>('rrls_taxonomy.json').then(setTaxonomy);
@@ -47,15 +48,20 @@ export default function RRLSExplorer() {
     load<RRLSStatement[]>('rrls_statements.json').then(setStatements);
   }, []);
 
+  // Filter statements by confidence
+  const filteredStatements = useMemo(() =>
+    minConfidence > 7 ? statements.filter(s => (s.overall_confidence ?? 0) >= minConfidence) : statements
+  , [statements, minConfidence]);
+
   // Compute totals dynamically from raw statements for dims not in pre-computed file
   const dynamicTotals = useMemo(() => {
-    if (!statements.length) return {};
+    if (!filteredStatements.length) return {};
     const result: Record<string, TaxonomyRow[]> = {};
     for (const field of STMT_DIM_FIELDS) {
       const dimKey = FIELD_TO_DIM[field] || field;
-      if (totals[dimKey]) continue; // already have pre-computed data
+      if (totals[dimKey] && minConfidence <= 7) continue; // use pre-computed when unfiltered
       const counts: Record<string, number> = {};
-      for (const s of statements) {
+      for (const s of filteredStatements) {
         const val = String((s as unknown as Record<string, unknown>)[field] ?? '');
         if (val) counts[val] = (counts[val] || 0) + 1;
       }
@@ -64,7 +70,7 @@ export default function RRLSExplorer() {
         .map(([value, count]) => ({ value, count }));
     }
     return result;
-  }, [statements, totals]);
+  }, [filteredStatements, totals, minConfidence]);
 
   const mergedTotals = useMemo(() => ({ ...totals, ...dynamicTotals }), [totals, dynamicTotals]);
 
@@ -79,13 +85,13 @@ export default function RRLSExplorer() {
 
   // Compute per-source taxonomy for dims not in pre-computed file
   const dynamicTaxonomy = useMemo(() => {
-    if (!statements.length) return {};
+    if (!filteredStatements.length) return {};
     const result: Record<string, TaxonomyRow[]> = {};
     for (const field of STMT_DIM_FIELDS) {
       const dimKey = FIELD_TO_DIM[field] || field;
-      if (taxonomy[dimKey]) continue;
+      if (taxonomy[dimKey] && minConfidence <= 7) continue;
       const counts: Record<string, Record<string, number>> = {};
-      for (const s of statements) {
+      for (const s of filteredStatements) {
         const val = String((s as unknown as Record<string, unknown>)[field] ?? '');
         if (!val) continue;
         const src = s.source || '';
@@ -101,30 +107,19 @@ export default function RRLSExplorer() {
       result[dimKey] = rows;
     }
     return result;
-  }, [statements, taxonomy]);
+  }, [filteredStatements, taxonomy, minConfidence]);
 
   const mergedTaxonomy = useMemo(() => ({ ...taxonomy, ...dynamicTaxonomy }), [taxonomy, dynamicTaxonomy]);
 
   // Compute time series for dims not in pre-computed file
   const dynamicTaxTime = useMemo(() => {
-    if (!statements.length) return {};
+    if (!filteredStatements.length) return {};
     const result: Record<string, { month: string; value: string; count: number }[]> = {};
     for (const field of STMT_DIM_FIELDS) {
       const dimKey = FIELD_TO_DIM[field] || field;
-      if (taxTime[dimKey]) continue;
-      const counts: Record<string, Record<string, number>> = {};
-      for (const s of statements) {
-        if (!s.date) continue;
-        const month = s.date.slice(0, 7);
-        const val = String((s as unknown as Record<string, unknown>)[field] ?? '');
-        if (!val) continue;
-        const key = `${month}|${val}`;
-        if (!counts[key]) counts[key] = { m: month, v: val, c: 0 } as unknown as Record<string, number>;
-        counts[key] = { ...counts[key] };
-      }
-      // Simpler approach
+      if (taxTime[dimKey] && minConfidence <= 7) continue;
       const agg: Record<string, number> = {};
-      for (const s of statements) {
+      for (const s of filteredStatements) {
         if (!s.date) continue;
         const month = s.date.slice(0, 7);
         const val = String((s as unknown as Record<string, unknown>)[field] ?? '');
@@ -138,15 +133,15 @@ export default function RRLSExplorer() {
       });
     }
     return result;
-  }, [statements, taxTime]);
+  }, [filteredStatements, taxTime, minConfidence]);
 
   const mergedTaxTime = useMemo(() => ({ ...taxTime, ...dynamicTaxTime }), [taxTime, dynamicTaxTime]);
 
   // Dynamic cross-tabulation from raw statements
   const crossRows = useMemo(() => {
-    if (!statements.length || crossDim1 === crossDim2) return [];
+    if (!filteredStatements.length || crossDim1 === crossDim2) return [];
     const counts: Record<string, Record<string, number>> = {};
-    for (const s of statements) {
+    for (const s of filteredStatements) {
       const v1 = (s as unknown as Record<string, unknown>)[crossDim1] as string;
       const v2 = (s as unknown as Record<string, unknown>)[crossDim2] as string;
       if (!v1 || !v2) continue;
@@ -160,7 +155,7 @@ export default function RRLSExplorer() {
       }
     }
     return result;
-  }, [statements, crossDim1, crossDim2]);
+  }, [filteredStatements, crossDim1, crossDim2]);
 
   // Heatmap data from cross-tab
   const dim1Vals = [...new Set(crossRows.map(r => r.dim1))].sort();
@@ -179,12 +174,12 @@ export default function RRLSExplorer() {
 
   // Compute RRLS ordinal severity over time from raw statements
   const ordinalMonthly = useMemo(() => {
-    if (!statements.length) return {};
+    if (!filteredStatements.length) return {};
     const agg: Record<string, Record<string, { total: number; count: number }>> = {};
     for (const dim of RRLS_ORDINAL_DIMS) {
       agg[dim] = {};
       const scores = RRLS_ORDINAL_SCORES[dim];
-      for (const s of statements) {
+      for (const s of filteredStatements) {
         if (!s.date) continue;
         const month = s.date.slice(0, 7);
         const val = (s as unknown as Record<string, unknown>)[dim] as string;
@@ -202,7 +197,7 @@ export default function RRLSExplorer() {
       }
     }
     return result;
-  }, [statements]);
+  }, [filteredStatements]);
 
   const ordinalMonths = useMemo(() => {
     const ms = new Set<string>();
@@ -223,6 +218,16 @@ export default function RRLSExplorer() {
         <select value={selectedDim} onChange={e => setSelectedDim(e.target.value)}>
           {dims.map(d => <option key={d} value={d}>{DIM_LABELS[d] || d}</option>)}
         </select>
+        <div className="confidence-slider">
+          <label>Confidence {'\u2265'}</label>
+          <input
+            type="range" min={7} max={10} step={1}
+            value={minConfidence}
+            onChange={e => setMinConfidence(Number(e.target.value))}
+          />
+          <span className="conf-value">{minConfidence}</span>
+        </div>
+        <span className="result-count">{filteredStatements.length.toLocaleString()} statements</span>
       </div>
 
       {/* Absolute counts */}
@@ -429,7 +434,7 @@ export default function RRLSExplorer() {
             const vals = Object.keys(scores).sort((a, b) => scores[a] - scores[b]);
             // Aggregate from raw statements by month
             const agg: Record<string, Record<string, number>> = {};
-            for (const s of statements) {
+            for (const s of filteredStatements) {
               if (!s.date) continue;
               const month = s.date.slice(0, 7);
               const val = (s as unknown as Record<string, unknown>)[dim] as string;

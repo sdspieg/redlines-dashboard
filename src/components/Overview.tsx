@@ -27,7 +27,6 @@ export default function Overview() {
   const ntsFunnel = ['Total Chunks', '1st Pass NTS', '2nd Pass NTS'];
   const ntsVals = [stats.total_chunks, stats.fpa_nts_relevant, stats.nts2_confirmed];
 
-  // Top 15 sources by RRLS
   const top = rrls.slice(0, 15);
 
   return (
@@ -43,15 +42,15 @@ export default function Overview() {
         </div>
         <div className="stat-card" style={{ borderColor: '#1f77b4' }}>
           <div className="stat-val">{stats.rls2_confirmed.toLocaleString()}</div>
-          <div className="stat-label">RRLS Statements</div>
+          <div className="stat-label">RRLS ({((stats.rls2_confirmed / stats.total_chunks) * 100).toFixed(1)}% of chunks)</div>
         </div>
         <div className="stat-card" style={{ borderColor: '#ff7f0e' }}>
           <div className="stat-val">{stats.nts2_confirmed.toLocaleString()}</div>
-          <div className="stat-label">NTS Statements</div>
+          <div className="stat-label">NTS ({((stats.nts2_confirmed / stats.total_chunks) * 100).toFixed(1)}% of chunks)</div>
         </div>
         <div className="stat-card" style={{ borderColor: '#d62728' }}>
           <div className="stat-val">{stats.crls_count.toLocaleString()}</div>
-          <div className="stat-label">CRLS Statements</div>
+          <div className="stat-label">CRLS ({((stats.crls_count / stats.total_chunks) * 100).toFixed(1)}% of chunks)</div>
         </div>
         <div className="stat-card">
           <div className="stat-val">{stats.total_sources}</div>
@@ -62,9 +61,10 @@ export default function Overview() {
       <div className="chart-row">
         <div className="chart-box">
           <div className="chart-title-bar">
+            <h4>RLS \u2192 RRLS \u2192 CRLS Pipeline</h4>
             <ChartInfo
               title="RLS Pipeline Funnel"
-              description="Funnel chart showing how text chunks are progressively filtered through the multi-pass annotation pipeline from raw chunks to confirmed RRLS and CRLS statements."
+              description="Funnel chart showing how text chunks are progressively filtered through the multi-pass annotation pipeline from raw chunks to confirmed RRLS and CRLS statements. Percentages show retention at each stage."
             />
           </div>
           <Plot
@@ -76,9 +76,8 @@ export default function Overview() {
               marker: { color: ['#a0a0b0', '#1f77b4', '#2980b9', '#1a5276', '#d62728'] },
             }]}
             layout={{
-              title: 'RLS \u2192 RRLS \u2192 CRLS Pipeline',
               paper_bgcolor: 'transparent', plot_bgcolor: 'transparent',
-              font: { color: '#e0e0e0' }, margin: { t: 40, b: 20, l: 120, r: 20 },
+              font: { color: '#e0e0e0' }, margin: { t: 10, b: 20, l: 120, r: 20 },
               height: 300,
             }}
             config={{ displayModeBar: false, responsive: true }}
@@ -87,9 +86,10 @@ export default function Overview() {
         </div>
         <div className="chart-box">
           <div className="chart-title-bar">
+            <h4>NTS Pipeline</h4>
             <ChartInfo
               title="NTS Pipeline Funnel"
-              description="Funnel chart showing the nuclear threat statement annotation pipeline, from initial text chunks through first-pass screening to confirmed NTS statements."
+              description="Funnel chart showing the nuclear threat statement annotation pipeline, from initial text chunks through first-pass screening to confirmed NTS statements. Percentages show retention at each stage."
             />
           </div>
           <Plot
@@ -101,9 +101,8 @@ export default function Overview() {
               marker: { color: ['#a0a0b0', '#ff7f0e', '#e67e22'] },
             }]}
             layout={{
-              title: 'NTS Pipeline',
               paper_bgcolor: 'transparent', plot_bgcolor: 'transparent',
-              font: { color: '#e0e0e0' }, margin: { t: 40, b: 20, l: 120, r: 20 },
+              font: { color: '#e0e0e0' }, margin: { t: 10, b: 20, l: 120, r: 20 },
               height: 300,
             }}
             config={{ displayModeBar: false, responsive: true }}
@@ -115,6 +114,7 @@ export default function Overview() {
       <div className="chart-row">
         <div className="chart-box">
           <div className="chart-title-bar">
+            <h4>Confirmed Statements by Source (Top 15)</h4>
             <ChartInfo
               title="Confirmed Statements by Source"
               description="Grouped bar chart comparing RRLS and NTS confirmed statement counts across the top 15 sources. Shows which sources generate the most red line and nuclear threat rhetoric."
@@ -134,13 +134,13 @@ export default function Overview() {
               },
             ]}
             layout={{
-              title: 'Confirmed Statements by Source (Top 15)',
               barmode: 'group',
               paper_bgcolor: 'transparent', plot_bgcolor: 'transparent',
               font: { color: '#e0e0e0' },
               xaxis: { tickangle: -45 },
-              margin: { t: 40, b: 120, l: 60, r: 20 },
+              margin: { t: 10, b: 120, l: 60, r: 20 },
               height: 400,
+              yaxis: { title: 'Count' },
               legend: { orientation: 'h', y: 1.1 },
             }}
             config={{ displayModeBar: false, responsive: true }}
@@ -152,9 +152,10 @@ export default function Overview() {
       <div className="chart-row">
         <div className="chart-box">
           <div className="chart-title-bar">
+            <h4>Statements by Database — Absolute</h4>
             <ChartInfo
-              title="By Database"
-              description="Grouped bar chart comparing total chunks, RRLS, and NTS counts across source databases (Kremlin, MFA, etc.). Shows which databases contribute most to each statement category."
+              title="By Database — Absolute"
+              description="Grouped bar chart comparing total chunks, RRLS, and NTS counts across source databases."
             />
           </div>
           <Plot
@@ -164,12 +165,52 @@ export default function Overview() {
               { type: 'bar', name: 'NTS', x: comp.map(r => r.db), y: comp.map(r => r.nts), marker: { color: '#ff7f0e' } },
             ]}
             layout={{
-              title: 'By Database',
               barmode: 'group',
               paper_bgcolor: 'transparent', plot_bgcolor: 'transparent',
               font: { color: '#e0e0e0' },
-              margin: { t: 40, b: 60, l: 60, r: 20 },
+              margin: { t: 10, b: 60, l: 60, r: 20 },
               height: 350,
+              yaxis: { title: 'Count' },
+              legend: { orientation: 'h', y: 1.1 },
+            }}
+            config={{ displayModeBar: false, responsive: true }}
+            style={{ width: '100%' }}
+          />
+        </div>
+        <div className="chart-box">
+          <div className="chart-title-bar">
+            <h4>Classification Rate by Database — % of Chunks</h4>
+            <ChartInfo
+              title="By Database — Relative"
+              description="What percentage of each database's chunks are classified as RRLS or NTS. Higher rates indicate databases with denser red line or nuclear threat content."
+            />
+          </div>
+          <Plot
+            data={[
+              {
+                type: 'bar', name: 'RRLS %',
+                x: comp.map(r => r.db),
+                y: comp.map(r => r.total_chunks > 0 ? (r.rrls / r.total_chunks) * 100 : 0),
+                marker: { color: '#1f77b4' },
+                text: comp.map(r => r.total_chunks > 0 ? ((r.rrls / r.total_chunks) * 100).toFixed(1) + '%' : '0%'),
+                textposition: 'outside',
+              },
+              {
+                type: 'bar', name: 'NTS %',
+                x: comp.map(r => r.db),
+                y: comp.map(r => r.total_chunks > 0 ? (r.nts / r.total_chunks) * 100 : 0),
+                marker: { color: '#ff7f0e' },
+                text: comp.map(r => r.total_chunks > 0 ? ((r.nts / r.total_chunks) * 100).toFixed(1) + '%' : '0%'),
+                textposition: 'outside',
+              },
+            ]}
+            layout={{
+              barmode: 'group',
+              paper_bgcolor: 'transparent', plot_bgcolor: 'transparent',
+              font: { color: '#e0e0e0' },
+              margin: { t: 10, b: 60, l: 60, r: 20 },
+              height: 350,
+              yaxis: { title: '% of Chunks', ticksuffix: '%' },
               legend: { orientation: 'h', y: 1.1 },
             }}
             config={{ displayModeBar: false, responsive: true }}

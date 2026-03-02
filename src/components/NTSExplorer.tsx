@@ -47,6 +47,7 @@ export default function NTSExplorer() {
     (DIM_LABELS[a] || a).localeCompare(DIM_LABELS[b] || b)
   );
   const rows = taxonomy[selectedDim] || [];
+  const totalCount = rows.reduce((s, r) => s + r.count, 0);
 
   // Compute average severity per month per dimension
   const computeAvgSeverity = (dim: string) => {
@@ -69,7 +70,7 @@ export default function NTSExplorer() {
 
   const allMonths = [...new Set(severity.map(r => r.month))].sort();
 
-  // Severity breakdown by month × dim
+  // Severity breakdown by month x dim
   const severityByMonth = (dim: string) => {
     const agg: Record<string, Record<string, number>> = {};
     for (const r of severity) {
@@ -80,6 +81,8 @@ export default function NTSExplorer() {
     }
     return agg;
   };
+
+  const dimLabel = DIM_LABELS[selectedDim] || selectedDim;
 
   return (
     <div className="tab-content">
@@ -93,11 +96,13 @@ export default function NTSExplorer() {
       </div>
 
       <div className="chart-row">
+        {/* Absolute counts */}
         <div className="chart-box">
           <div className="chart-title-bar">
+            <h4>{dimLabel} — Absolute Counts</h4>
             <ChartInfo
-              title={DIM_LABELS[selectedDim] || selectedDim}
-              description="Horizontal bar chart showing the frequency of each value for the selected NTS taxonomy dimension across all confirmed nuclear threat statements."
+              title={`${dimLabel} — Absolute Counts`}
+              description="Horizontal bar chart showing the absolute frequency of each value for the selected NTS taxonomy dimension across all confirmed nuclear threat statements."
             />
           </div>
           <Plot
@@ -111,13 +116,44 @@ export default function NTSExplorer() {
               textposition: 'outside',
             }]}
             layout={{
-              title: DIM_LABELS[selectedDim] || selectedDim,
               paper_bgcolor: 'transparent', plot_bgcolor: 'transparent',
               font: { color: '#e0e0e0' },
-              margin: { t: 40, b: 20, l: 220, r: 60 },
+              margin: { t: 10, b: 20, l: 220, r: 60 },
               height: Math.max(300, rows.length * 30),
               yaxis: { autorange: 'reversed' },
               xaxis: { title: 'Count' },
+            }}
+            config={{ displayModeBar: false, responsive: true }}
+            style={{ width: '100%' }}
+          />
+        </div>
+
+        {/* Relative percentages */}
+        <div className="chart-box">
+          <div className="chart-title-bar">
+            <h4>{dimLabel} — % of NTS</h4>
+            <ChartInfo
+              title={`${dimLabel} — Relative Share`}
+              description="Horizontal bar chart showing what percentage of all NTS statements each value represents for the selected dimension."
+            />
+          </div>
+          <Plot
+            data={[{
+              type: 'bar',
+              x: rows.map(r => totalCount > 0 ? (r.count / totalCount) * 100 : 0),
+              y: rows.map(r => r.value),
+              orientation: 'h',
+              marker: { color: '#ffbb78' },
+              text: rows.map(r => totalCount > 0 ? ((r.count / totalCount) * 100).toFixed(1) + '%' : '0%'),
+              textposition: 'outside',
+            }]}
+            layout={{
+              paper_bgcolor: 'transparent', plot_bgcolor: 'transparent',
+              font: { color: '#e0e0e0' },
+              margin: { t: 10, b: 20, l: 220, r: 60 },
+              height: Math.max(300, rows.length * 30),
+              yaxis: { autorange: 'reversed' },
+              xaxis: { title: '% of NTS Statements', ticksuffix: '%' },
             }}
             config={{ displayModeBar: false, responsive: true }}
             style={{ width: '100%' }}
@@ -128,10 +164,10 @@ export default function NTSExplorer() {
       {/* Average Severity by Dimension Over Time */}
       {severity.length > 0 && (
         <>
-          <h3 style={{ color: '#ff7f0e', marginTop: 30 }}>Average Severity by Dimension Over Time</h3>
           <div className="chart-row">
             <div className="chart-box">
               <div className="chart-title-bar">
+                <h4>Average Severity by Dimension Over Time</h4>
                 <ChartInfo
                   title="Average Severity by Dimension Over Time"
                   description="Each line shows the weighted average severity score per month for one ordinal dimension (Tone, Conditionality, Consequences, Specificity). Higher scores indicate more severe/escalatory language. Scores are derived by mapping each ordinal value to a numeric scale."
@@ -152,10 +188,9 @@ export default function NTSExplorer() {
                   };
                 })}
                 layout={{
-                  title: 'Average Severity by Dimension Over Time',
                   paper_bgcolor: 'transparent', plot_bgcolor: 'transparent',
                   font: { color: '#e0e0e0' },
-                  margin: { t: 40, b: 40, l: 60, r: 20 },
+                  margin: { t: 10, b: 40, l: 60, r: 20 },
                   height: 400,
                   legend: { orientation: 'h', y: 1.15, font: { size: 11 } },
                   xaxis: { title: 'Month' },
@@ -185,6 +220,7 @@ export default function NTSExplorer() {
               <div className="chart-row" key={dim}>
                 <div className="chart-box">
                   <div className="chart-title-bar">
+                    <h4>{DIM_LABELS[dim] || dim} — Monthly Breakdown</h4>
                     <ChartInfo
                       title={`${DIM_LABELS[dim] || dim} Monthly Breakdown`}
                       description={`Stacked bar chart showing the distribution of ${DIM_LABELS[dim] || dim} values per month. Each color represents a different ordinal level.`}
@@ -199,11 +235,10 @@ export default function NTSExplorer() {
                       marker: { color: getColor(`${dim}_${v}`, i) },
                     }))}
                     layout={{
-                      title: DIM_LABELS[dim] || dim,
                       barmode: 'stack',
                       paper_bgcolor: 'transparent', plot_bgcolor: 'transparent',
                       font: { color: '#e0e0e0', size: 11 },
-                      margin: { t: 40, b: 40, l: 60, r: 20 },
+                      margin: { t: 10, b: 40, l: 60, r: 20 },
                       height: 300,
                       legend: { orientation: 'h', y: 1.15, font: { size: 10 } },
                       xaxis: { title: 'Month' },

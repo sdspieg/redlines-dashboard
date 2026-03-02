@@ -33,6 +33,7 @@ export default function RRLSExplorer() {
     (DIM_LABELS[a] || a).localeCompare(DIM_LABELS[b] || b)
   );
   const rows = totals[selectedDim] || [];
+  const totalCount = rows.reduce((s, r) => s + r.count, 0);
   const crossKeys = Object.keys(crossTabs).sort((a, b) => {
     const fmt = (k: string) => k.replace(/_x_/g, ' \u00d7 ').replace(/_/g, ' ');
     return fmt(a).localeCompare(fmt(b));
@@ -54,6 +55,8 @@ export default function RRLSExplorer() {
   const timeValues = [...new Set(timeData.map(r => r.value))].slice(0, 8);
   const timeMonths = [...new Set(timeData.map(r => r.month))].sort();
 
+  const dimLabel = DIM_LABELS[selectedDim] || selectedDim;
+
   return (
     <div className="tab-content">
       <h2 style={{ color: '#1f77b4' }}>RRLS Taxonomy Explorer</h2>
@@ -65,12 +68,14 @@ export default function RRLSExplorer() {
         </select>
       </div>
 
+      {/* Absolute counts */}
       <div className="chart-row">
         <div className="chart-box">
           <div className="chart-title-bar">
+            <h4>{dimLabel} — Absolute Counts</h4>
             <ChartInfo
-              title={DIM_LABELS[selectedDim] || selectedDim}
-              description="Horizontal bar chart showing the frequency of each value for the selected taxonomy dimension across all confirmed RRLS statements."
+              title={`${dimLabel} — Absolute Counts`}
+              description="Horizontal bar chart showing the absolute frequency of each value for the selected taxonomy dimension across all confirmed RRLS statements."
             />
           </div>
           <Plot
@@ -84,13 +89,44 @@ export default function RRLSExplorer() {
               textposition: 'outside',
             }]}
             layout={{
-              title: DIM_LABELS[selectedDim] || selectedDim,
               paper_bgcolor: 'transparent', plot_bgcolor: 'transparent',
               font: { color: '#e0e0e0' },
-              margin: { t: 40, b: 20, l: 200, r: 60 },
+              margin: { t: 10, b: 20, l: 200, r: 60 },
               height: Math.max(300, rows.length * 28),
               yaxis: { autorange: 'reversed' },
               xaxis: { title: 'Count' },
+            }}
+            config={{ displayModeBar: false, responsive: true }}
+            style={{ width: '100%' }}
+          />
+        </div>
+
+        {/* Relative percentages */}
+        <div className="chart-box">
+          <div className="chart-title-bar">
+            <h4>{dimLabel} — % of RRLS</h4>
+            <ChartInfo
+              title={`${dimLabel} — Relative Share`}
+              description="Horizontal bar chart showing what percentage of all RRLS statements each value represents for the selected dimension."
+            />
+          </div>
+          <Plot
+            data={[{
+              type: 'bar',
+              x: rows.map(r => totalCount > 0 ? (r.count / totalCount) * 100 : 0),
+              y: rows.map(r => r.value),
+              orientation: 'h',
+              marker: { color: '#aec7e8' },
+              text: rows.map(r => totalCount > 0 ? ((r.count / totalCount) * 100).toFixed(1) + '%' : '0%'),
+              textposition: 'outside',
+            }]}
+            layout={{
+              paper_bgcolor: 'transparent', plot_bgcolor: 'transparent',
+              font: { color: '#e0e0e0' },
+              margin: { t: 10, b: 20, l: 200, r: 60 },
+              height: Math.max(300, rows.length * 28),
+              yaxis: { autorange: 'reversed' },
+              xaxis: { title: '% of RRLS Statements', ticksuffix: '%' },
             }}
             config={{ displayModeBar: false, responsive: true }}
             style={{ width: '100%' }}
@@ -103,8 +139,9 @@ export default function RRLSExplorer() {
         <div className="chart-row">
           <div className="chart-box">
             <div className="chart-title-bar">
+              <h4>{dimLabel} by Source (Top 10)</h4>
               <ChartInfo
-                title={`${DIM_LABELS[selectedDim] || selectedDim} by Source`}
+                title={`${dimLabel} by Source`}
                 description="Stacked bar chart showing how each taxonomy value is distributed across the top 10 sources. Each color represents a different value of the selected dimension."
               />
             </div>
@@ -129,13 +166,13 @@ export default function RRLSExplorer() {
                 }));
               })()}
               layout={{
-                title: `${DIM_LABELS[selectedDim] || selectedDim} by Source (Top 10)`,
                 barmode: 'stack',
                 paper_bgcolor: 'transparent', plot_bgcolor: 'transparent',
                 font: { color: '#e0e0e0', size: 11 },
-                margin: { t: 40, b: 100, l: 60, r: 20 },
+                margin: { t: 10, b: 100, l: 60, r: 20 },
                 height: 400,
                 xaxis: { tickangle: -45 },
+                yaxis: { title: 'Count' },
                 legend: { orientation: 'h', y: 1.15, font: { size: 10 } },
               }}
               config={{ displayModeBar: false, responsive: true }}
@@ -150,8 +187,9 @@ export default function RRLSExplorer() {
         <div className="chart-row">
           <div className="chart-box">
             <div className="chart-title-bar">
+              <h4>{dimLabel} Over Time</h4>
               <ChartInfo
-                title={`${DIM_LABELS[selectedDim] || selectedDim} Over Time`}
+                title={`${dimLabel} Over Time`}
                 description="Line chart showing how the top values of the selected dimension trend over time, with each line representing a different category value."
               />
             </div>
@@ -168,10 +206,9 @@ export default function RRLSExplorer() {
                 line: { color: getColor(v, i) },
               }))}
               layout={{
-                title: `${DIM_LABELS[selectedDim] || selectedDim} Over Time`,
                 paper_bgcolor: 'transparent', plot_bgcolor: 'transparent',
                 font: { color: '#e0e0e0' },
-                margin: { t: 40, b: 40, l: 60, r: 20 },
+                margin: { t: 10, b: 40, l: 60, r: 20 },
                 height: 350,
                 legend: { orientation: 'h', y: 1.15, font: { size: 10 } },
                 xaxis: { title: 'Month' },
@@ -196,6 +233,7 @@ export default function RRLSExplorer() {
           <div className="chart-row">
             <div className="chart-box">
               <div className="chart-title-bar">
+                <h4>{selectedCross.replace(/_x_/g, ' \u00d7 ').replace(/_/g, ' ')}</h4>
                 <ChartInfo
                   title="Cross-Tabulation Heatmap"
                   description="Heatmap showing the co-occurrence of two taxonomy dimensions. Darker cells indicate higher counts. Hover over cells to see exact values."
@@ -211,10 +249,9 @@ export default function RRLSExplorer() {
                   hovertemplate: '%{y} \u00d7 %{x}: %{z}<extra></extra>',
                 }]}
                 layout={{
-                  title: selectedCross.replace(/_x_/g, ' \u00d7 ').replace(/_/g, ' '),
                   paper_bgcolor: 'transparent', plot_bgcolor: 'transparent',
                   font: { color: '#e0e0e0', size: 10 },
-                  margin: { t: 40, b: 100, l: 200, r: 20 },
+                  margin: { t: 10, b: 100, l: 200, r: 20 },
                   height: Math.max(350, dim1Vals.length * 30),
                   xaxis: { tickangle: -45 },
                 }}

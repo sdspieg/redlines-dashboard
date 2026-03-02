@@ -22,7 +22,6 @@ export default function TimeSeries() {
     load<WarContextRow[]>('war_context_acled.json').then(setWarAcled);
   }, []);
 
-  // Aggregate monthly by month
   const agg = (data: MonthlyRow[]) => {
     const m: Record<string, number> = {};
     for (const r of data) m[r.month] = (m[r.month] || 0) + r.count;
@@ -38,9 +37,9 @@ export default function TimeSeries() {
     ...Object.keys(rrlsM), ...Object.keys(ntsM), ...Object.keys(crlsM),
   ])].sort();
 
-  // Relative rates
   const rrlsRate = allMonths.map(m => chunksM[m] ? ((rrlsM[m] || 0) / chunksM[m]) * 100 : 0);
   const ntsRate = allMonths.map(m => chunksM[m] ? ((ntsM[m] || 0) / chunksM[m]) * 100 : 0);
+  const crlsRate = allMonths.map(m => chunksM[m] ? ((crlsM[m] || 0) / chunksM[m]) * 100 : 0);
 
   return (
     <div className="tab-content">
@@ -49,8 +48,9 @@ export default function TimeSeries() {
       <div className="chart-row">
         <div className="chart-box">
           <div className="chart-title-bar">
+            <h4>All Statement Types Over Time — Absolute Counts</h4>
             <ChartInfo
-              title="All Statement Types Over Time"
+              title="Absolute Statement Counts"
               description="Line chart showing absolute monthly counts for all three statement types (RRLS, NTS, CRLS). Useful for identifying spikes in red line rhetoric correlated with geopolitical events."
             />
           </div>
@@ -61,10 +61,9 @@ export default function TimeSeries() {
               { type: 'scatter', mode: 'lines', name: 'CRLS', x: allMonths, y: allMonths.map(m => crlsM[m] || 0), line: { color: '#d62728', width: 2 } },
             ]}
             layout={{
-              title: 'All Statement Types Over Time (Absolute)',
               paper_bgcolor: 'transparent', plot_bgcolor: 'transparent',
               font: { color: '#e0e0e0' },
-              margin: { t: 40, b: 40, l: 60, r: 20 },
+              margin: { t: 10, b: 40, l: 60, r: 20 },
               height: 350,
               legend: { orientation: 'h', y: 1.1 },
               xaxis: { title: 'Month' }, yaxis: { title: 'Count' },
@@ -78,21 +77,22 @@ export default function TimeSeries() {
       <div className="chart-row">
         <div className="chart-box">
           <div className="chart-title-bar">
+            <h4>Relative Rate — % of Chunks Classified as Statement</h4>
             <ChartInfo
               title="Relative Rate"
-              description="Shows the proportion of text chunks classified as RRLS or NTS per month. This normalizes for varying corpus size, revealing whether escalatory language is becoming more prevalent independent of how many documents are available."
+              description="Shows the proportion of text chunks classified as RRLS, NTS, or CRLS per month. This normalizes for varying corpus size, revealing whether escalatory language is becoming more prevalent independent of how many documents are available."
             />
           </div>
           <Plot
             data={[
               { type: 'scatter', mode: 'lines', name: 'RRLS %', x: allMonths, y: rrlsRate, line: { color: '#1f77b4', width: 2 } },
               { type: 'scatter', mode: 'lines', name: 'NTS %', x: allMonths, y: ntsRate, line: { color: '#ff7f0e', width: 2 } },
+              { type: 'scatter', mode: 'lines', name: 'CRLS %', x: allMonths, y: crlsRate, line: { color: '#d62728', width: 2 } },
             ]}
             layout={{
-              title: 'Relative Rate (% of chunks classified as statement)',
               paper_bgcolor: 'transparent', plot_bgcolor: 'transparent',
               font: { color: '#e0e0e0' },
-              margin: { t: 40, b: 40, l: 60, r: 20 },
+              margin: { t: 10, b: 40, l: 60, r: 20 },
               height: 300,
               legend: { orientation: 'h', y: 1.1 },
               xaxis: { title: 'Month' }, yaxis: { title: '% of Chunks', ticksuffix: '%' },
@@ -103,11 +103,11 @@ export default function TimeSeries() {
         </div>
       </div>
 
-      {/* War context overlay */}
       {warPers.length > 0 && (
         <div className="chart-row">
           <div className="chart-box">
             <div className="chart-title-bar">
+              <h4>RRLS vs. Russian Personnel Losses</h4>
               <ChartInfo
                 title="RRLS vs. Personnel Losses"
                 description="Dual-axis chart comparing monthly RRLS counts (bars, left axis) with Russian personnel losses (line, right axis). Reveals potential correlation between battlefield losses and red line rhetoric."
@@ -119,10 +119,9 @@ export default function TimeSeries() {
                 { type: 'scatter', mode: 'lines', name: 'Personnel Losses', x: warPers.map(r => r.month), y: warPers.map(r => r.personnel_losses ?? 0), line: { color: '#d62728', width: 2 }, yaxis: 'y2' },
               ]}
               layout={{
-                title: 'RRLS vs. Russian Personnel Losses',
                 paper_bgcolor: 'transparent', plot_bgcolor: 'transparent',
                 font: { color: '#e0e0e0' },
-                margin: { t: 40, b: 40, l: 60, r: 60 },
+                margin: { t: 10, b: 40, l: 60, r: 60 },
                 height: 350,
                 legend: { orientation: 'h', y: 1.1 },
                 yaxis: { title: 'RRLS Count', side: 'left' },
@@ -139,6 +138,7 @@ export default function TimeSeries() {
         <div className="chart-row">
           <div className="chart-box">
             <div className="chart-title-bar">
+              <h4>NTS vs. ACLED Conflict Events</h4>
               <ChartInfo
                 title="NTS vs. ACLED Events"
                 description="Dual-axis chart comparing monthly NTS counts (bars, left axis) with ACLED conflict events (line, right axis). Shows whether nuclear threat rhetoric correlates with conflict intensity."
@@ -150,10 +150,9 @@ export default function TimeSeries() {
                 { type: 'scatter', mode: 'lines', name: 'ACLED Events', x: warAcled.map(r => r.month), y: warAcled.map(r => r.events ?? 0), line: { color: '#d62728', width: 2 }, yaxis: 'y2' },
               ]}
               layout={{
-                title: 'NTS vs. ACLED Conflict Events',
                 paper_bgcolor: 'transparent', plot_bgcolor: 'transparent',
                 font: { color: '#e0e0e0' },
-                margin: { t: 40, b: 40, l: 60, r: 60 },
+                margin: { t: 10, b: 40, l: 60, r: 60 },
                 height: 350,
                 legend: { orientation: 'h', y: 1.1 },
                 yaxis: { title: 'NTS Count', side: 'left' },
@@ -166,10 +165,10 @@ export default function TimeSeries() {
         </div>
       )}
 
-      {/* By source (top 6) */}
       <div className="chart-row">
         <div className="chart-box">
           <div className="chart-title-bar">
+            <h4>RRLS by Source Over Time (Top 6)</h4>
             <ChartInfo
               title="RRLS by Source Over Time"
               description="Multi-line chart showing RRLS statement counts per month for the top 6 sources. Reveals which media outlets and institutions drive red line rhetoric at different periods."
@@ -193,12 +192,12 @@ export default function TimeSeries() {
               }));
             })()}
             layout={{
-              title: 'RRLS by Source Over Time (Top 6)',
               paper_bgcolor: 'transparent', plot_bgcolor: 'transparent',
               font: { color: '#e0e0e0' },
-              margin: { t: 40, b: 40, l: 60, r: 20 },
+              margin: { t: 10, b: 40, l: 60, r: 20 },
               height: 350,
               legend: { orientation: 'h', y: 1.15, font: { size: 10 } },
+              xaxis: { title: 'Month' }, yaxis: { title: 'Count' },
             }}
             config={{ displayModeBar: false, responsive: true }}
             style={{ width: '100%' }}

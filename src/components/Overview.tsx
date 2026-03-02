@@ -225,6 +225,24 @@ export default function Overview() {
           });
         }
 
+        // Color helper based on rank difference
+        const diffColor = (diff: number) =>
+          diff >= 8 ? '#d62728' : diff >= 4 ? '#ff7f0e' : '#a0a0b0';
+
+        // Legend traces (invisible points, just for the legend)
+        const legendTraces = [
+          { name: 'Large change (8+)', color: '#d62728' },
+          { name: 'Moderate change (4-7)', color: '#ff7f0e' },
+          { name: 'Small change (0-3)', color: '#a0a0b0' },
+        ].map(({ name, color }) => ({
+          type: 'scatter' as const,
+          mode: 'lines' as const,
+          x: [null], y: [null],
+          line: { color, width: 2 },
+          name,
+          showlegend: true,
+        }));
+
         // Source connector traces: 3 points (left dot, midpoint for hover, right dot)
         const sel = selectedSource;
         const slopeTraces = allSources.map(src => {
@@ -234,22 +252,19 @@ export default function Overview() {
           const isSelected = sel === src;
           const isDimmed = sel !== null && !isSelected;
 
+          const baseColor = diffColor(diff);
           let color: string;
           let width: number;
           if (isSelected) {
-            color = '#4fc3f7'; width = 3.5;
+            color = baseColor; width = 3.5;
           } else if (isDimmed) {
             color = 'rgba(160,160,176,0.12)'; width = 1;
-          } else if (diff >= 8) {
-            color = '#d62728'; width = 2;
-          } else if (diff >= 4) {
-            color = '#ff7f0e'; width = 1.8;
           } else {
-            color = 'rgba(160,160,176,0.35)'; width = 1;
+            color = diff >= 4 ? baseColor : 'rgba(160,160,176,0.35)';
+            width = diff >= 8 ? 2 : diff >= 4 ? 1.8 : 1;
           }
 
-          const markerColor = isSelected ? '#4fc3f7' : isDimmed ? 'rgba(160,160,176,0.15)' :
-            diff >= 8 ? '#d62728' : diff >= 4 ? '#ff7f0e' : 'rgba(160,160,176,0.5)';
+          const markerColor = isDimmed ? 'rgba(160,160,176,0.15)' : baseColor;
 
           const midY = (rRank + nRank) / 2;
           const rConf = rrlsConfMap[src] ?? 0;
@@ -274,10 +289,11 @@ export default function Overview() {
         const annotations = allSources.flatMap(src => {
           const rRank = rrlsRankMap[src] ?? maxRank;
           const nRank = ntsRankMap[src] ?? maxRank;
+          const diff = Math.abs(rRank - nRank);
           const name = shortName(src);
           const isSelected = sel === src;
           const isDimmed = sel !== null && !isSelected;
-          const fontColor = isSelected ? '#4fc3f7' : isDimmed ? 'rgba(160,160,176,0.25)' : '#e0e0e0';
+          const fontColor = isSelected ? diffColor(diff) : isDimmed ? 'rgba(160,160,176,0.25)' : '#e0e0e0';
           const fontWeight = isSelected ? 700 : 400;
           return [
             { x: 0.14, y: rRank, text: `${rRank}. ${name}`, xanchor: 'right' as const },
@@ -302,7 +318,7 @@ export default function Overview() {
                 />
               </div>
               <Plot
-                data={slopeTraces as unknown as React.ComponentProps<typeof Plot>['data']}
+                data={[...legendTraces, ...slopeTraces] as unknown as React.ComponentProps<typeof Plot>['data']}
                 layout={{
                   paper_bgcolor: 'transparent', plot_bgcolor: 'transparent',
                   font: { color: '#e0e0e0' },
@@ -325,7 +341,8 @@ export default function Overview() {
                     fixedrange: true,
                   },
                   shapes: rankLines as Plotly.Layout['shapes'],
-                  showlegend: false,
+                  showlegend: true,
+                  legend: { orientation: 'h', y: 1.05, font: { size: 11 } },
                   hovermode: 'closest',
                   annotations,
                 }}
@@ -347,12 +364,15 @@ export default function Overview() {
                   });
                 }}
               />
-              {selectedSource && (
-                <div style={{ textAlign: 'center', padding: '6px 0', fontSize: 12, color: '#4fc3f7', cursor: 'pointer' }}
-                  onClick={() => setSelectedSource(null)}>
-                  Showing: <strong>{shortName(selectedSource)}</strong> — click to deselect
-                </div>
-              )}
+              {selectedSource && (() => {
+                const d = Math.abs((rrlsRankMap[selectedSource] ?? maxRank) - (ntsRankMap[selectedSource] ?? maxRank));
+                return (
+                  <div style={{ textAlign: 'center', padding: '6px 0', fontSize: 12, color: diffColor(d), cursor: 'pointer' }}
+                    onClick={() => setSelectedSource(null)}>
+                    Showing: <strong>{shortName(selectedSource)}</strong> — click to deselect
+                  </div>
+                );
+              })()}
             </div>
           </div>
         );

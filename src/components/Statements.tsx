@@ -1,5 +1,6 @@
 import { useEffect, useState, useMemo } from 'react';
 import { load } from '../data';
+import ChartInfo from './ChartInfo';
 import type { RRLSStatement, NTSStatement } from '../types';
 
 type Mode = 'rrls' | 'nts';
@@ -42,7 +43,13 @@ export default function Statements() {
 
   return (
     <div className="tab-content">
-      <h2 style={{ color: '#9467bd' }}>Statement Browser</h2>
+      <h2 style={{ color: '#9467bd' }}>
+        Statement Browser
+        <ChartInfo
+          title="Statement Browser"
+          description="Browse and search individual RRLS and NTS statements. Filter by source or search text, speaker, and target fields. Each card shows the statement context, metadata tags, and classification labels."
+        />
+      </h2>
 
       <div className="filter-bar">
         <button className={`mode-btn ${mode === 'rrls' ? 'active-rrls' : ''}`} onClick={() => setMode('rrls')}>

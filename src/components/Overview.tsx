@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import Plot from 'react-plotly.js';
 import { load } from '../data';
+import ChartInfo from './ChartInfo';
 import type { OverviewStats, SourceRow, ComparativeRow } from '../types';
 
 export default function Overview() {
@@ -60,6 +61,12 @@ export default function Overview() {
 
       <div className="chart-row">
         <div className="chart-box">
+          <div className="chart-title-bar">
+            <ChartInfo
+              title="RLS Pipeline Funnel"
+              description="Funnel chart showing how text chunks are progressively filtered through the multi-pass annotation pipeline from raw chunks to confirmed RRLS and CRLS statements."
+            />
+          </div>
           <Plot
             data={[{
               type: 'funnel',
@@ -69,7 +76,7 @@ export default function Overview() {
               marker: { color: ['#a0a0b0', '#1f77b4', '#2980b9', '#1a5276', '#d62728'] },
             }]}
             layout={{
-              title: 'RLS → RRLS → CRLS Pipeline',
+              title: 'RLS \u2192 RRLS \u2192 CRLS Pipeline',
               paper_bgcolor: 'transparent', plot_bgcolor: 'transparent',
               font: { color: '#e0e0e0' }, margin: { t: 40, b: 20, l: 120, r: 20 },
               height: 300,
@@ -79,6 +86,12 @@ export default function Overview() {
           />
         </div>
         <div className="chart-box">
+          <div className="chart-title-bar">
+            <ChartInfo
+              title="NTS Pipeline Funnel"
+              description="Funnel chart showing the nuclear threat statement annotation pipeline, from initial text chunks through first-pass screening to confirmed NTS statements."
+            />
+          </div>
           <Plot
             data={[{
               type: 'funnel',
@@ -101,6 +114,12 @@ export default function Overview() {
 
       <div className="chart-row">
         <div className="chart-box">
+          <div className="chart-title-bar">
+            <ChartInfo
+              title="Confirmed Statements by Source"
+              description="Grouped bar chart comparing RRLS and NTS confirmed statement counts across the top 15 sources. Shows which sources generate the most red line and nuclear threat rhetoric."
+            />
+          </div>
           <Plot
             data={[
               {
@@ -132,6 +151,12 @@ export default function Overview() {
 
       <div className="chart-row">
         <div className="chart-box">
+          <div className="chart-title-bar">
+            <ChartInfo
+              title="By Database"
+              description="Grouped bar chart comparing total chunks, RRLS, and NTS counts across source databases (Kremlin, MFA, etc.). Shows which databases contribute most to each statement category."
+            />
+          </div>
           <Plot
             data={[
               { type: 'bar', name: 'Total Chunks', x: comp.map(r => r.db), y: comp.map(r => r.total_chunks), marker: { color: '#a0a0b0' } },
@@ -155,7 +180,7 @@ export default function Overview() {
 
       <div className="info-box">
         <p>Date range: <strong>{stats.date_min}</strong> to <strong>{stats.date_max}</strong> | {chunks.length} unique sources across {stats.total_sources} institutions</p>
-        <p>Pipeline: 1st pass (GPT-4o screening) → 2nd pass (GPT-5 mini taxonomy) → 3rd pass (civilizational framing)</p>
+        <p>Pipeline: 1st pass (GPT-4o screening) \u2192 2nd pass (GPT-5 mini taxonomy) \u2192 3rd pass (civilizational framing)</p>
       </div>
     </div>
   );

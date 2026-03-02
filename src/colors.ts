@@ -113,6 +113,26 @@ export const RRLS_COLORS: Record<string, Record<string, string>> = {
     'Metaphorical': '#9467bd',
   },
 
+  // Ordinal intensity dimensions
+  line_intensity: {
+    'Low':      SEQ4[0],
+    'Moderate':  SEQ4[1],
+    'High':     SEQ4[2],
+    'Very High': SEQ4[3],
+  },
+  threat_intensity: {
+    'Low':      SEQ4[0],
+    'Moderate':  SEQ4[1],
+    'High':     SEQ4[2],
+    'Very High': SEQ4[3],
+  },
+  overall_confidence: {
+    '7': SEQ4[0],
+    '8': SEQ4[1],
+    '9': SEQ4[2],
+    '10': SEQ4[3],
+  },
+
   // Ordinal dimensions — sequential green→red
   line: {
     'Vague Line':    SEQ3[0],
@@ -244,9 +264,11 @@ export const RRLS_ORDINAL_SCORES: Record<string, Record<string, number>> = {
     'One-time': 1, 'Short-term': 2, 'Revocable': 3,
     'Conditional': 4, 'Long-term': 5, 'Indefinite': 6, 'Irrevocable': 7,
   },
+  line_intensity: { 'Low': 1, 'Moderate': 2, 'High': 3, 'Very High': 4 },
+  threat_intensity: { 'Low': 1, 'Moderate': 2, 'High': 3, 'Very High': 4 },
 };
 
-export const RRLS_ORDINAL_DIMS = ['line', 'threat', 'specificity', 'immediacy', 'durability'];
+export const RRLS_ORDINAL_DIMS = ['line', 'threat', 'specificity', 'immediacy', 'durability', 'line_intensity', 'threat_intensity'];
 
 // ── NTS ORDINAL SCORES (corrected to match actual data labels) ──────
 
@@ -278,6 +300,8 @@ export const RRLS_DIM_COLORS: Record<string, string> = {
   specificity: '#2ca02c',
   immediacy: '#ff7f0e',
   durability: '#9467bd',
+  line_intensity: '#17becf',
+  threat_intensity: '#e377c2',
 };
 
 export const NTS_DIM_COLORS: Record<string, string> = {

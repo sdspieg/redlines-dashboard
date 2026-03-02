@@ -42,7 +42,7 @@ export default function Statements() {
 
   return (
     <div className="tab-content">
-      <h2 style={{ color: '#bc8cff' }}>Statement Browser</h2>
+      <h2 style={{ color: '#9467bd' }}>Statement Browser</h2>
 
       <div className="filter-bar">
         <button className={`mode-btn ${mode === 'rrls' ? 'active-rrls' : ''}`} onClick={() => setMode('rrls')}>

@@ -49,7 +49,7 @@ export default function RRLSExplorer() {
 
   return (
     <div className="tab-content">
-      <h2 style={{ color: '#58a6ff' }}>RRLS Taxonomy Explorer</h2>
+      <h2 style={{ color: '#1f77b4' }}>RRLS Taxonomy Explorer</h2>
 
       <div className="filter-bar">
         <label>Dimension:</label>
@@ -66,14 +66,14 @@ export default function RRLSExplorer() {
               x: rows.map(r => r.count),
               y: rows.map(r => r.value),
               orientation: 'h',
-              marker: { color: '#58a6ff' },
+              marker: { color: '#1f77b4' },
               text: rows.map(r => r.count.toString()),
               textposition: 'outside',
             }]}
             layout={{
               title: DIM_LABELS[selectedDim] || selectedDim,
               paper_bgcolor: 'transparent', plot_bgcolor: 'transparent',
-              font: { color: '#c9d1d9' },
+              font: { color: '#e0e0e0' },
               margin: { t: 40, b: 20, l: 200, r: 60 },
               height: Math.max(300, rows.length * 28),
               yaxis: { autorange: 'reversed' },
@@ -112,7 +112,7 @@ export default function RRLSExplorer() {
                 title: `${DIM_LABELS[selectedDim] || selectedDim} by Source (Top 10)`,
                 barmode: 'stack',
                 paper_bgcolor: 'transparent', plot_bgcolor: 'transparent',
-                font: { color: '#c9d1d9', size: 11 },
+                font: { color: '#e0e0e0', size: 11 },
                 margin: { t: 40, b: 100, l: 60, r: 20 },
                 height: 400,
                 xaxis: { tickangle: -45 },
@@ -143,7 +143,7 @@ export default function RRLSExplorer() {
               layout={{
                 title: `${DIM_LABELS[selectedDim] || selectedDim} Over Time`,
                 paper_bgcolor: 'transparent', plot_bgcolor: 'transparent',
-                font: { color: '#c9d1d9' },
+                font: { color: '#e0e0e0' },
                 margin: { t: 40, b: 40, l: 60, r: 20 },
                 height: 350,
                 legend: { orientation: 'h', y: 1.15, font: { size: 10 } },
@@ -172,7 +172,7 @@ export default function RRLSExplorer() {
                 data={[{
                   type: 'heatmap',
                   x: dim2Vals, y: dim1Vals, z,
-                  colorscale: [[0, '#0d1117'], [0.5, '#1f6feb'], [1, '#58a6ff']],
+                  colorscale: [[0, '#1a1a2e'], [0.5, '#1f77b4'], [1, '#4fc3f7']],
                   text: z.map(row => row.map(v => v.toString())),
                   texttemplate: '%{text}',
                   hovertemplate: '%{y} × %{x}: %{z}<extra></extra>',
@@ -180,7 +180,7 @@ export default function RRLSExplorer() {
                 layout={{
                   title: selectedCross.replace(/_x_/g, ' × ').replace(/_/g, ' '),
                   paper_bgcolor: 'transparent', plot_bgcolor: 'transparent',
-                  font: { color: '#c9d1d9', size: 10 },
+                  font: { color: '#e0e0e0', size: 10 },
                   margin: { t: 40, b: 100, l: 200, r: 20 },
                   height: Math.max(350, dim1Vals.length * 30),
                   xaxis: { tickangle: -45 },

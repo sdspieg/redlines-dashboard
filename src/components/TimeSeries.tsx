@@ -42,20 +42,20 @@ export default function TimeSeries() {
 
   return (
     <div className="tab-content">
-      <h2 style={{ color: '#3fb950' }}>Time Series Analysis</h2>
+      <h2 style={{ color: '#2ca02c' }}>Time Series Analysis</h2>
 
       <div className="chart-row">
         <div className="chart-box">
           <Plot
             data={[
-              { type: 'scatter', mode: 'lines', name: 'RRLS', x: allMonths, y: allMonths.map(m => rrlsM[m] || 0), line: { color: '#58a6ff', width: 2 } },
-              { type: 'scatter', mode: 'lines', name: 'NTS', x: allMonths, y: allMonths.map(m => ntsM[m] || 0), line: { color: '#f0883e', width: 2 } },
-              { type: 'scatter', mode: 'lines', name: 'CRLS', x: allMonths, y: allMonths.map(m => crlsM[m] || 0), line: { color: '#da3633', width: 2 } },
+              { type: 'scatter', mode: 'lines', name: 'RRLS', x: allMonths, y: allMonths.map(m => rrlsM[m] || 0), line: { color: '#1f77b4', width: 2 } },
+              { type: 'scatter', mode: 'lines', name: 'NTS', x: allMonths, y: allMonths.map(m => ntsM[m] || 0), line: { color: '#ff7f0e', width: 2 } },
+              { type: 'scatter', mode: 'lines', name: 'CRLS', x: allMonths, y: allMonths.map(m => crlsM[m] || 0), line: { color: '#d62728', width: 2 } },
             ]}
             layout={{
               title: 'All Statement Types Over Time (Absolute)',
               paper_bgcolor: 'transparent', plot_bgcolor: 'transparent',
-              font: { color: '#c9d1d9' },
+              font: { color: '#e0e0e0' },
               margin: { t: 40, b: 40, l: 60, r: 20 },
               height: 350,
               legend: { orientation: 'h', y: 1.1 },
@@ -71,13 +71,13 @@ export default function TimeSeries() {
         <div className="chart-box">
           <Plot
             data={[
-              { type: 'scatter', mode: 'lines', name: 'RRLS %', x: allMonths, y: rrlsRate, line: { color: '#58a6ff', width: 2 } },
-              { type: 'scatter', mode: 'lines', name: 'NTS %', x: allMonths, y: ntsRate, line: { color: '#f0883e', width: 2 } },
+              { type: 'scatter', mode: 'lines', name: 'RRLS %', x: allMonths, y: rrlsRate, line: { color: '#1f77b4', width: 2 } },
+              { type: 'scatter', mode: 'lines', name: 'NTS %', x: allMonths, y: ntsRate, line: { color: '#ff7f0e', width: 2 } },
             ]}
             layout={{
               title: 'Relative Rate (% of chunks classified as statement)',
               paper_bgcolor: 'transparent', plot_bgcolor: 'transparent',
-              font: { color: '#c9d1d9' },
+              font: { color: '#e0e0e0' },
               margin: { t: 40, b: 40, l: 60, r: 20 },
               height: 300,
               legend: { orientation: 'h', y: 1.1 },
@@ -95,13 +95,13 @@ export default function TimeSeries() {
           <div className="chart-box">
             <Plot
               data={[
-                { type: 'bar', name: 'RRLS', x: allMonths, y: allMonths.map(m => rrlsM[m] || 0), marker: { color: '#58a6ff', opacity: 0.7 }, yaxis: 'y' },
-                { type: 'scatter', mode: 'lines', name: 'Personnel Losses', x: warPers.map(r => r.month), y: warPers.map(r => r.personnel_losses ?? 0), line: { color: '#f85149', width: 2 }, yaxis: 'y2' },
+                { type: 'bar', name: 'RRLS', x: allMonths, y: allMonths.map(m => rrlsM[m] || 0), marker: { color: '#1f77b4', opacity: 0.7 }, yaxis: 'y' },
+                { type: 'scatter', mode: 'lines', name: 'Personnel Losses', x: warPers.map(r => r.month), y: warPers.map(r => r.personnel_losses ?? 0), line: { color: '#d62728', width: 2 }, yaxis: 'y2' },
               ]}
               layout={{
                 title: 'RRLS vs. Russian Personnel Losses',
                 paper_bgcolor: 'transparent', plot_bgcolor: 'transparent',
-                font: { color: '#c9d1d9' },
+                font: { color: '#e0e0e0' },
                 margin: { t: 40, b: 40, l: 60, r: 60 },
                 height: 350,
                 legend: { orientation: 'h', y: 1.1 },
@@ -120,13 +120,13 @@ export default function TimeSeries() {
           <div className="chart-box">
             <Plot
               data={[
-                { type: 'bar', name: 'NTS', x: allMonths, y: allMonths.map(m => ntsM[m] || 0), marker: { color: '#f0883e', opacity: 0.7 }, yaxis: 'y' },
-                { type: 'scatter', mode: 'lines', name: 'ACLED Events', x: warAcled.map(r => r.month), y: warAcled.map(r => r.events ?? 0), line: { color: '#f85149', width: 2 }, yaxis: 'y2' },
+                { type: 'bar', name: 'NTS', x: allMonths, y: allMonths.map(m => ntsM[m] || 0), marker: { color: '#ff7f0e', opacity: 0.7 }, yaxis: 'y' },
+                { type: 'scatter', mode: 'lines', name: 'ACLED Events', x: warAcled.map(r => r.month), y: warAcled.map(r => r.events ?? 0), line: { color: '#d62728', width: 2 }, yaxis: 'y2' },
               ]}
               layout={{
                 title: 'NTS vs. ACLED Conflict Events',
                 paper_bgcolor: 'transparent', plot_bgcolor: 'transparent',
-                font: { color: '#c9d1d9' },
+                font: { color: '#e0e0e0' },
                 margin: { t: 40, b: 40, l: 60, r: 60 },
                 height: 350,
                 legend: { orientation: 'h', y: 1.1 },
@@ -162,7 +162,7 @@ export default function TimeSeries() {
             layout={{
               title: 'RRLS by Source Over Time (Top 6)',
               paper_bgcolor: 'transparent', plot_bgcolor: 'transparent',
-              font: { color: '#c9d1d9' },
+              font: { color: '#e0e0e0' },
               margin: { t: 40, b: 40, l: 60, r: 20 },
               height: 350,
               legend: { orientation: 'h', y: 1.15, font: { size: 10 } },

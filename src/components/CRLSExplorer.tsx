@@ -35,7 +35,7 @@ export default function CRLSExplorer() {
 
   return (
     <div className="tab-content">
-      <h2 style={{ color: '#da3633' }}>Civilizational Red Line Statements (CRLS)</h2>
+      <h2 style={{ color: '#d62728' }}>Civilizational Red Line Statements (CRLS)</h2>
       <p className="subtitle">RRLS that invoke civilizational framing — cultural identity, historical destiny, or civilizational conflict narratives.</p>
 
       <div className="chart-row">
@@ -47,12 +47,12 @@ export default function CRLSExplorer() {
               values: framing.map(r => r.count),
               hole: 0.4,
               textinfo: 'label+percent',
-              marker: { colors: ['#da3633', '#f0883e', '#e3b341', '#3fb950', '#58a6ff', '#bc8cff', '#8b949e'] },
+              marker: { colors: ['#d62728', '#ff7f0e', '#bcbd22', '#2ca02c', '#1f77b4', '#9467bd', '#a0a0b0'] },
             }]}
             layout={{
               title: 'Civilizational Framing Types',
               paper_bgcolor: 'transparent', plot_bgcolor: 'transparent',
-              font: { color: '#c9d1d9' },
+              font: { color: '#e0e0e0' },
               margin: { t: 40, b: 20, l: 20, r: 20 },
               height: 400,
               showlegend: true,
@@ -69,12 +69,12 @@ export default function CRLSExplorer() {
               x: territories.slice(0, 20).map(r => r.count),
               y: territories.slice(0, 20).map(r => r.territory),
               orientation: 'h',
-              marker: { color: '#da3633' },
+              marker: { color: '#d62728' },
             }]}
             layout={{
               title: 'Territories Mentioned (Sphere of Influence Claims)',
               paper_bgcolor: 'transparent', plot_bgcolor: 'transparent',
-              font: { color: '#c9d1d9' },
+              font: { color: '#e0e0e0' },
               margin: { t: 40, b: 20, l: 160, r: 20 },
               height: 400,
               yaxis: { autorange: 'reversed' },
@@ -92,13 +92,13 @@ export default function CRLSExplorer() {
               type: 'scatter', mode: 'lines+markers',
               x: months, y: months.map(m => byMonth[m]),
               fill: 'tozeroy',
-              marker: { color: '#da3633' },
-              line: { color: '#da3633' },
+              marker: { color: '#d62728' },
+              line: { color: '#d62728' },
             }]}
             layout={{
               title: 'CRLS Over Time',
               paper_bgcolor: 'transparent', plot_bgcolor: 'transparent',
-              font: { color: '#c9d1d9' },
+              font: { color: '#e0e0e0' },
               margin: { t: 40, b: 40, l: 60, r: 20 },
               height: 300,
               xaxis: { title: 'Month' }, yaxis: { title: 'Count' },
@@ -125,7 +125,7 @@ export default function CRLSExplorer() {
             layout={{
               title: 'CRLS by Source Over Time',
               paper_bgcolor: 'transparent', plot_bgcolor: 'transparent',
-              font: { color: '#c9d1d9' },
+              font: { color: '#e0e0e0' },
               margin: { t: 40, b: 40, l: 60, r: 20 },
               height: 350,
               legend: { orientation: 'h', y: 1.15, font: { size: 10 } },
@@ -143,12 +143,12 @@ export default function CRLSExplorer() {
               type: 'bar',
               x: bySource.map(r => r.source),
               y: bySource.map(r => r.crls ?? 0),
-              marker: { color: '#da3633' },
+              marker: { color: '#d62728' },
             }]}
             layout={{
               title: 'CRLS Count by Source',
               paper_bgcolor: 'transparent', plot_bgcolor: 'transparent',
-              font: { color: '#c9d1d9' },
+              font: { color: '#e0e0e0' },
               margin: { t: 40, b: 100, l: 60, r: 20 },
               height: 350,
               xaxis: { tickangle: -45 },

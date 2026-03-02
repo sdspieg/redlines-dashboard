@@ -43,7 +43,7 @@ export default function NTSExplorer() {
 
   return (
     <div className="tab-content">
-      <h2 style={{ color: '#f0883e' }}>Nuclear Threat Statements (NTS) Explorer</h2>
+      <h2 style={{ color: '#ff7f0e' }}>Nuclear Threat Statements (NTS) Explorer</h2>
 
       <div className="filter-bar">
         <label>Dimension:</label>
@@ -60,14 +60,14 @@ export default function NTSExplorer() {
               x: rows.map(r => r.count),
               y: rows.map(r => r.value),
               orientation: 'h',
-              marker: { color: '#f0883e' },
+              marker: { color: '#ff7f0e' },
               text: rows.map(r => r.count.toString()),
               textposition: 'outside',
             }]}
             layout={{
               title: DIM_LABELS[selectedDim] || selectedDim,
               paper_bgcolor: 'transparent', plot_bgcolor: 'transparent',
-              font: { color: '#c9d1d9' },
+              font: { color: '#e0e0e0' },
               margin: { t: 40, b: 20, l: 220, r: 60 },
               height: Math.max(300, rows.length * 30),
               yaxis: { autorange: 'reversed' },
@@ -80,7 +80,7 @@ export default function NTSExplorer() {
       </div>
 
       {/* Severity over time for ordinal dimensions */}
-      <h3 style={{ color: '#f0883e', marginTop: 30 }}>Severity Trends Over Time</h3>
+      <h3 style={{ color: '#ff7f0e', marginTop: 30 }}>Severity Trends Over Time</h3>
       {ORDINAL_DIMS.map(dim => {
         const agg = severityByMonth(dim);
         const months = Object.keys(agg).sort();
@@ -101,7 +101,7 @@ export default function NTSExplorer() {
                   title: DIM_LABELS[dim] || dim,
                   barmode: 'stack',
                   paper_bgcolor: 'transparent', plot_bgcolor: 'transparent',
-                  font: { color: '#c9d1d9', size: 11 },
+                  font: { color: '#e0e0e0', size: 11 },
                   margin: { t: 40, b: 40, l: 60, r: 20 },
                   height: 300,
                   legend: { orientation: 'h', y: 1.15, font: { size: 10 } },

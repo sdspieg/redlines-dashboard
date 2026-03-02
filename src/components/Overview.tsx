@@ -10,6 +10,7 @@ export default function Overview() {
   const [rrls, setRrls] = useState<SourceRow[]>([]);
   const [nts, setNts] = useState<SourceRow[]>([]);
   const [comp, setComp] = useState<ComparativeRow[]>([]);
+  const [selectedSource, setSelectedSource] = useState<string | null>(null);
 
   useEffect(() => {
     load<OverviewStats>('overview_stats.json').then(setStats);
@@ -196,7 +197,6 @@ export default function Overview() {
 
       {/* Slope chart: RRLS rank vs NTS rank */}
       {rrls.length > 0 && nts.length > 0 && (() => {
-        // Shorten long source names for display
         const shortName = (s: string) =>
           s.includes('Посольство России в США') ? 'Посольство России в США' :
           s.length > 30 ? s.slice(0, 28) + '...' : s;
@@ -207,42 +207,87 @@ export default function Overview() {
         for (const r of ntsRanked) ntsRankMap[r.source] = r.rank;
         const rrlsRankMap: Record<string, number> = {};
         for (const r of rrlsRanked) rrlsRankMap[r.source] = r.rank;
+        const rrlsConfMap: Record<string, number> = {};
+        for (const r of rrlsRanked) rrlsConfMap[r.source] = r.confirmed;
+        const ntsConfMap: Record<string, number> = {};
+        for (const r of ntsRanked) ntsConfMap[r.source] = r.confirmed;
 
-        // All sources present in either top 20
         const allSources = [...new Set([...rrlsRanked.map(r => r.source), ...ntsRanked.map(r => r.source)])];
-        const maxRank = 21; // for sources not in top 20
+        const maxRank = 21;
 
-        // Dot-to-dot lines only (x from 0.15 to 0.85, leaving space for labels)
+        // Faint horizontal rank-reference lines (same rank left↔right)
+        const rankLines: Partial<Plotly.Shape>[] = [];
+        for (let rank = 1; rank <= maxRank; rank++) {
+          rankLines.push({
+            type: 'line', layer: 'below',
+            x0: 0.15, x1: 0.85, y0: rank, y1: rank,
+            line: { color: 'rgba(255,255,255,0.07)', width: 1 },
+          });
+        }
+
+        // Source connector traces: 3 points (left dot, midpoint for hover, right dot)
+        const sel = selectedSource;
         const slopeTraces = allSources.map(src => {
           const rRank = rrlsRankMap[src] ?? maxRank;
           const nRank = ntsRankMap[src] ?? maxRank;
           const diff = Math.abs(rRank - nRank);
-          const color = diff >= 8 ? '#d62728' : diff >= 4 ? '#ff7f0e' : 'rgba(160,160,176,0.4)';
+          const isSelected = sel === src;
+          const isDimmed = sel !== null && !isSelected;
+
+          let color: string;
+          let width: number;
+          if (isSelected) {
+            color = '#4fc3f7'; width = 3.5;
+          } else if (isDimmed) {
+            color = 'rgba(160,160,176,0.12)'; width = 1;
+          } else if (diff >= 8) {
+            color = '#d62728'; width = 2;
+          } else if (diff >= 4) {
+            color = '#ff7f0e'; width = 1.8;
+          } else {
+            color = 'rgba(160,160,176,0.35)'; width = 1;
+          }
+
+          const markerColor = isSelected ? '#4fc3f7' : isDimmed ? 'rgba(160,160,176,0.15)' :
+            diff >= 8 ? '#d62728' : diff >= 4 ? '#ff7f0e' : 'rgba(160,160,176,0.5)';
+
+          const midY = (rRank + nRank) / 2;
+          const rConf = rrlsConfMap[src] ?? 0;
+          const nConf = ntsConfMap[src] ?? 0;
+          const name = shortName(src);
+
           return {
             type: 'scatter' as const,
             mode: 'lines+markers' as const,
-            x: [0.15, 0.85],
-            y: [rRank, nRank],
-            line: { color, width: diff >= 4 ? 2 : 1 },
-            marker: { size: 6, color: diff >= 8 ? '#d62728' : diff >= 4 ? '#ff7f0e' : '#a0a0b0' },
-            hovertemplate: `${shortName(src)}<br>RRLS rank: ${rRank}${rRank === maxRank ? ' (not in top 20)' : ''}<br>NTS rank: ${nRank}${nRank === maxRank ? ' (not in top 20)' : ''}<extra></extra>`,
+            x: [0.15, 0.5, 0.85],
+            y: [rRank, midY, nRank],
+            line: { color, width, shape: 'linear' as const },
+            marker: { size: [6, 0.1, 6], color: markerColor },
+            customdata: [src, src, src],
+            hovertemplate: `<b>${name}</b><br>RRLS: rank ${rRank}${rRank <= 20 ? ` (${rConf} confirmed)` : ' (not in top 20)'}<br>NTS: rank ${nRank}${nRank <= 20 ? ` (${nConf} confirmed)` : ' (not in top 20)'}<br>Rank change: ${diff === 0 ? 'same' : (nRank < rRank ? '\u25b2' : '\u25bc') + Math.abs(rRank - nRank)}<extra></extra>`,
+            hoveron: 'points+fills' as const,
             showlegend: false,
           };
         });
 
-        // Labels: "N. Source Name" on left (right-aligned), "N. Source Name" on right (left-aligned)
+        // Labels with highlight support
         const annotations = allSources.flatMap(src => {
           const rRank = rrlsRankMap[src] ?? maxRank;
           const nRank = ntsRankMap[src] ?? maxRank;
           const name = shortName(src);
+          const isSelected = sel === src;
+          const isDimmed = sel !== null && !isSelected;
+          const fontColor = isSelected ? '#4fc3f7' : isDimmed ? 'rgba(160,160,176,0.25)' : '#e0e0e0';
+          const fontWeight = isSelected ? 700 : 400;
           return [
             { x: 0.14, y: rRank, text: `${rRank}. ${name}`, xanchor: 'right' as const },
             { x: 0.86, y: nRank, text: `${nRank}. ${name}`, xanchor: 'left' as const },
           ].map(a => ({
             ...a,
             showarrow: false,
-            font: { size: 10, color: '#e0e0e0' },
+            font: { size: isSelected ? 11 : 10, color: fontColor, weight: fontWeight },
             yanchor: 'middle' as const,
+            captureevents: true,
           }));
         });
 
@@ -253,7 +298,7 @@ export default function Overview() {
                 <h4>RRLS vs NTS Rank Comparison (Slope Chart)</h4>
                 <ChartInfo
                   title="RRLS vs NTS Rank Comparison"
-                  description="Slope chart comparing how sources rank for RRLS (left) vs NTS (right). Lines connect the same source across both rankings. Red lines indicate large rank differences (8+), orange for moderate (4-7), grey for similar ranks. Sources not in a top 20 are placed at rank 21."
+                  description="Slope chart comparing how sources rank for RRLS (left) vs NTS (right). Click a source name or line to highlight it. Red lines = large rank change (8+), orange = moderate (4-7), grey = similar. Hover over lines for details."
                 />
               </div>
               <Plot
@@ -279,13 +324,35 @@ export default function Overview() {
                     zeroline: false,
                     fixedrange: true,
                   },
+                  shapes: rankLines as Plotly.Layout['shapes'],
                   showlegend: false,
                   hovermode: 'closest',
                   annotations,
                 }}
                 config={{ displayModeBar: false, responsive: true }}
                 style={{ width: '100%' }}
+                onClick={(e: { points: { curveNumber: number; customdata?: string }[] }) => {
+                  const src = e.points?.[0]?.customdata;
+                  if (src) setSelectedSource(prev => prev === src ? null : src);
+                }}
+                onInitialized={(_: unknown, graphDiv: HTMLElement) => {
+                  (graphDiv as HTMLDivElement & { on: (evt: string, cb: (e: { annotation: { text: string } }) => void) => void }).on('plotly_clickannotation', (e) => {
+                    const text = e.annotation?.text || '';
+                    const match = text.match(/^\d+\.\s+(.+)$/);
+                    if (match) {
+                      const clickedName = match[1];
+                      const src = allSources.find(s => shortName(s) === clickedName);
+                      if (src) setSelectedSource(prev => prev === src ? null : src);
+                    }
+                  });
+                }}
               />
+              {selectedSource && (
+                <div style={{ textAlign: 'center', padding: '6px 0', fontSize: 12, color: '#4fc3f7', cursor: 'pointer' }}
+                  onClick={() => setSelectedSource(null)}>
+                  Showing: <strong>{shortName(selectedSource)}</strong> — click to deselect
+                </div>
+              )}
             </div>
           </div>
         );

@@ -14,8 +14,16 @@ export default function App() {
   return (
     <div className="app">
       <header className="app-header">
-        <h1>Red Lines Dashboard</h1>
-        <p className="subtitle">Russian Red Line & Nuclear Threat Statement Analysis</p>
+        <a href="https://hcss.nl/rubase/" target="_blank" rel="noopener noreferrer">
+          <img src={import.meta.env.BASE_URL + 'rubase_logo.svg'} alt="RuBase" className="header-logo" />
+        </a>
+        <div className="header-center">
+          <h1>Red Lines Dashboard</h1>
+          <p className="subtitle">Russian Red Line & Nuclear Threat Statement Analysis</p>
+        </div>
+        <a href="https://hcss.nl/" target="_blank" rel="noopener noreferrer">
+          <img src={import.meta.env.BASE_URL + 'hcss_logo.svg'} alt="HCSS" className="header-logo" />
+        </a>
       </header>
       <TabNav active={tab} onChange={setTab} />
       <main>

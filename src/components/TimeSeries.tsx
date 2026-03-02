@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import Plot from 'react-plotly.js';
 import { load } from '../data';
+import { getColor } from '../colors';
+import ChartInfo from './ChartInfo';
 import type { MonthlyRow, WarContextRow } from '../types';
 
 export default function TimeSeries() {
@@ -46,6 +48,12 @@ export default function TimeSeries() {
 
       <div className="chart-row">
         <div className="chart-box">
+          <div className="chart-title-bar">
+            <ChartInfo
+              title="All Statement Types Over Time"
+              description="Line chart showing absolute monthly counts for all three statement types (RRLS, NTS, CRLS). Useful for identifying spikes in red line rhetoric correlated with geopolitical events."
+            />
+          </div>
           <Plot
             data={[
               { type: 'scatter', mode: 'lines', name: 'RRLS', x: allMonths, y: allMonths.map(m => rrlsM[m] || 0), line: { color: '#1f77b4', width: 2 } },
@@ -69,6 +77,12 @@ export default function TimeSeries() {
 
       <div className="chart-row">
         <div className="chart-box">
+          <div className="chart-title-bar">
+            <ChartInfo
+              title="Relative Rate"
+              description="Shows the proportion of text chunks classified as RRLS or NTS per month. This normalizes for varying corpus size, revealing whether escalatory language is becoming more prevalent independent of how many documents are available."
+            />
+          </div>
           <Plot
             data={[
               { type: 'scatter', mode: 'lines', name: 'RRLS %', x: allMonths, y: rrlsRate, line: { color: '#1f77b4', width: 2 } },
@@ -93,6 +107,12 @@ export default function TimeSeries() {
       {warPers.length > 0 && (
         <div className="chart-row">
           <div className="chart-box">
+            <div className="chart-title-bar">
+              <ChartInfo
+                title="RRLS vs. Personnel Losses"
+                description="Dual-axis chart comparing monthly RRLS counts (bars, left axis) with Russian personnel losses (line, right axis). Reveals potential correlation between battlefield losses and red line rhetoric."
+              />
+            </div>
             <Plot
               data={[
                 { type: 'bar', name: 'RRLS', x: allMonths, y: allMonths.map(m => rrlsM[m] || 0), marker: { color: '#1f77b4', opacity: 0.7 }, yaxis: 'y' },
@@ -118,6 +138,12 @@ export default function TimeSeries() {
       {warAcled.length > 0 && (
         <div className="chart-row">
           <div className="chart-box">
+            <div className="chart-title-bar">
+              <ChartInfo
+                title="NTS vs. ACLED Events"
+                description="Dual-axis chart comparing monthly NTS counts (bars, left axis) with ACLED conflict events (line, right axis). Shows whether nuclear threat rhetoric correlates with conflict intensity."
+              />
+            </div>
             <Plot
               data={[
                 { type: 'bar', name: 'NTS', x: allMonths, y: allMonths.map(m => ntsM[m] || 0), marker: { color: '#ff7f0e', opacity: 0.7 }, yaxis: 'y' },
@@ -143,12 +169,18 @@ export default function TimeSeries() {
       {/* By source (top 6) */}
       <div className="chart-row">
         <div className="chart-box">
+          <div className="chart-title-bar">
+            <ChartInfo
+              title="RRLS by Source Over Time"
+              description="Multi-line chart showing RRLS statement counts per month for the top 6 sources. Reveals which media outlets and institutions drive red line rhetoric at different periods."
+            />
+          </div>
           <Plot
             data={(() => {
               const srcCounts: Record<string, number> = {};
               for (const r of rrls) srcCounts[r.source!] = (srcCounts[r.source!] || 0) + r.count;
               const topSrc = Object.entries(srcCounts).sort((a, b) => b[1] - a[1]).slice(0, 6).map(([s]) => s);
-              return topSrc.map(src => ({
+              return topSrc.map((src, i) => ({
                 type: 'scatter' as const,
                 mode: 'lines' as const,
                 name: src,
@@ -157,6 +189,7 @@ export default function TimeSeries() {
                   const row = rrls.find(r => r.month === m && r.source === src);
                   return row ? row.count : 0;
                 }),
+                line: { color: getColor(`ts_${src}`, i) },
               }));
             })()}
             layout={{

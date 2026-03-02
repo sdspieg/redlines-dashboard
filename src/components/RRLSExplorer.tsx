@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import Plot from 'react-plotly.js';
 import { load } from '../data';
+import { getColor } from '../colors';
+import ChartInfo from './ChartInfo';
 import type { TaxonomyRow, CrossTabRow } from '../types';
 
 const DIM_LABELS: Record<string, string> = {
@@ -27,9 +29,14 @@ export default function RRLSExplorer() {
     load<Record<string, { month: string; value: string; count: number }[]>>('rrls_taxonomy_time.json').then(setTaxTime);
   }, []);
 
-  const dims = Object.keys(totals);
+  const dims = Object.keys(totals).sort((a, b) =>
+    (DIM_LABELS[a] || a).localeCompare(DIM_LABELS[b] || b)
+  );
   const rows = totals[selectedDim] || [];
-  const crossKeys = Object.keys(crossTabs);
+  const crossKeys = Object.keys(crossTabs).sort((a, b) => {
+    const fmt = (k: string) => k.replace(/_x_/g, ' \u00d7 ').replace(/_/g, ' ');
+    return fmt(a).localeCompare(fmt(b));
+  });
   const crossRows = crossTabs[selectedCross] || [];
 
   // Heatmap data from cross-tab
@@ -60,6 +67,12 @@ export default function RRLSExplorer() {
 
       <div className="chart-row">
         <div className="chart-box">
+          <div className="chart-title-bar">
+            <ChartInfo
+              title={DIM_LABELS[selectedDim] || selectedDim}
+              description="Horizontal bar chart showing the frequency of each value for the selected taxonomy dimension across all confirmed RRLS statements."
+            />
+          </div>
           <Plot
             data={[{
               type: 'bar',
@@ -89,6 +102,12 @@ export default function RRLSExplorer() {
       {taxonomy[selectedDim] && (
         <div className="chart-row">
           <div className="chart-box">
+            <div className="chart-title-bar">
+              <ChartInfo
+                title={`${DIM_LABELS[selectedDim] || selectedDim} by Source`}
+                description="Stacked bar chart showing how each taxonomy value is distributed across the top 10 sources. Each color represents a different value of the selected dimension."
+              />
+            </div>
             <Plot
               data={(() => {
                 const bySource: Record<string, Record<string, number>> = {};
@@ -101,11 +120,12 @@ export default function RRLSExplorer() {
                   .slice(0, 10)
                   .map(([s]) => s);
                 const topVals = rows.slice(0, 8).map(r => r.value);
-                return topVals.map(v => ({
+                return topVals.map((v, i) => ({
                   type: 'bar' as const,
                   name: v,
                   x: topSources,
                   y: topSources.map(s => bySource[s]?.[v] || 0),
+                  marker: { color: getColor(v, i) },
                 }));
               })()}
               layout={{
@@ -129,8 +149,14 @@ export default function RRLSExplorer() {
       {timeData.length > 0 && (
         <div className="chart-row">
           <div className="chart-box">
+            <div className="chart-title-bar">
+              <ChartInfo
+                title={`${DIM_LABELS[selectedDim] || selectedDim} Over Time`}
+                description="Line chart showing how the top values of the selected dimension trend over time, with each line representing a different category value."
+              />
+            </div>
             <Plot
-              data={timeValues.map(v => ({
+              data={timeValues.map((v, i) => ({
                 type: 'scatter' as const,
                 mode: 'lines' as const,
                 name: v,
@@ -139,6 +165,7 @@ export default function RRLSExplorer() {
                   const row = timeData.find(r => r.month === m && r.value === v);
                   return row ? row.count : 0;
                 }),
+                line: { color: getColor(v, i) },
               }))}
               layout={{
                 title: `${DIM_LABELS[selectedDim] || selectedDim} Over Time`,
@@ -163,11 +190,17 @@ export default function RRLSExplorer() {
           <div className="filter-bar">
             <label>Cross-tabulation:</label>
             <select value={selectedCross} onChange={e => setSelectedCross(e.target.value)}>
-              {crossKeys.map(k => <option key={k} value={k}>{k.replace(/_x_/g, ' × ').replace(/_/g, ' ')}</option>)}
+              {crossKeys.map(k => <option key={k} value={k}>{k.replace(/_x_/g, ' \u00d7 ').replace(/_/g, ' ')}</option>)}
             </select>
           </div>
           <div className="chart-row">
             <div className="chart-box">
+              <div className="chart-title-bar">
+                <ChartInfo
+                  title="Cross-Tabulation Heatmap"
+                  description="Heatmap showing the co-occurrence of two taxonomy dimensions. Darker cells indicate higher counts. Hover over cells to see exact values."
+                />
+              </div>
               <Plot
                 data={[{
                   type: 'heatmap',
@@ -175,10 +208,10 @@ export default function RRLSExplorer() {
                   colorscale: [[0, '#1a1a2e'], [0.5, '#1f77b4'], [1, '#4fc3f7']],
                   text: z.map(row => row.map(v => v.toString())),
                   texttemplate: '%{text}',
-                  hovertemplate: '%{y} × %{x}: %{z}<extra></extra>',
+                  hovertemplate: '%{y} \u00d7 %{x}: %{z}<extra></extra>',
                 }]}
                 layout={{
-                  title: selectedCross.replace(/_x_/g, ' × ').replace(/_/g, ' '),
+                  title: selectedCross.replace(/_x_/g, ' \u00d7 ').replace(/_/g, ' '),
                   paper_bgcolor: 'transparent', plot_bgcolor: 'transparent',
                   font: { color: '#e0e0e0', size: 10 },
                   margin: { t: 40, b: 100, l: 200, r: 20 },

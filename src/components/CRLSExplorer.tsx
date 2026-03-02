@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import Plot from 'react-plotly.js';
 import { load } from '../data';
+import { TAB20, getColor } from '../colors';
+import ChartInfo from './ChartInfo';
 import type { SourceRow, MonthlyRow } from '../types';
 
 interface FramingRow { framing_type: string; count: number; }
@@ -26,7 +28,7 @@ export default function CRLSExplorer() {
   }
   const months = Object.keys(byMonth).sort();
 
-  // Monthly by source (top 5)
+  // Monthly by source (top 6)
   const srcCounts: Record<string, number> = {};
   for (const r of monthly) {
     srcCounts[r.source!] = (srcCounts[r.source!] || 0) + r.count;
@@ -40,6 +42,12 @@ export default function CRLSExplorer() {
 
       <div className="chart-row">
         <div className="chart-box">
+          <div className="chart-title-bar">
+            <ChartInfo
+              title="Civilizational Framing Types"
+              description="Donut chart showing the distribution of civilizational framing types across all CRLS statements. Each slice represents a distinct framing category."
+            />
+          </div>
           <Plot
             data={[{
               type: 'pie',
@@ -47,7 +55,7 @@ export default function CRLSExplorer() {
               values: framing.map(r => r.count),
               hole: 0.4,
               textinfo: 'label+percent',
-              marker: { colors: ['#d62728', '#ff7f0e', '#bcbd22', '#2ca02c', '#1f77b4', '#9467bd', '#a0a0b0'] },
+              marker: { colors: framing.map((_, i) => TAB20[i % TAB20.length]) },
             }]}
             layout={{
               title: 'Civilizational Framing Types',
@@ -63,6 +71,12 @@ export default function CRLSExplorer() {
           />
         </div>
         <div className="chart-box">
+          <div className="chart-title-bar">
+            <ChartInfo
+              title="Territories Mentioned"
+              description="Horizontal bar chart showing the most frequently mentioned territories in CRLS statements, indicating sphere-of-influence claims and geopolitical focal points."
+            />
+          </div>
           <Plot
             data={[{
               type: 'bar',
@@ -87,6 +101,12 @@ export default function CRLSExplorer() {
 
       <div className="chart-row">
         <div className="chart-box">
+          <div className="chart-title-bar">
+            <ChartInfo
+              title="CRLS Over Time"
+              description="Area chart showing the total number of civilizational red line statements per month, revealing temporal trends in civilizational rhetoric."
+            />
+          </div>
           <Plot
             data={[{
               type: 'scatter', mode: 'lines+markers',
@@ -111,8 +131,14 @@ export default function CRLSExplorer() {
 
       <div className="chart-row">
         <div className="chart-box">
+          <div className="chart-title-bar">
+            <ChartInfo
+              title="CRLS by Source Over Time"
+              description="Multi-line chart showing CRLS counts per month for the top 6 sources. Each line represents a different source, allowing comparison of civilizational rhetoric across outlets."
+            />
+          </div>
           <Plot
-            data={topSrc.map(src => ({
+            data={topSrc.map((src, i) => ({
               type: 'scatter' as const,
               mode: 'lines' as const,
               name: src,
@@ -121,6 +147,7 @@ export default function CRLSExplorer() {
                 const row = monthly.find(r => r.month === m && r.source === src);
                 return row ? row.count : 0;
               }),
+              line: { color: getColor(src, i) },
             }))}
             layout={{
               title: 'CRLS by Source Over Time',
@@ -138,6 +165,12 @@ export default function CRLSExplorer() {
 
       <div className="chart-row">
         <div className="chart-box">
+          <div className="chart-title-bar">
+            <ChartInfo
+              title="CRLS Count by Source"
+              description="Bar chart showing the total number of civilizational red line statements per source, highlighting which outlets produce the most civilizational framing."
+            />
+          </div>
           <Plot
             data={[{
               type: 'bar',

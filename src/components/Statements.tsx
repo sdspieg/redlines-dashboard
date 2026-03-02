@@ -1,9 +1,35 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useCallback } from 'react';
 import { load } from '../data';
 import ChartInfo from './ChartInfo';
 import type { RRLSStatement, NTSStatement } from '../types';
 
 type Mode = 'rrls' | 'nts';
+
+interface FilterDef {
+  key: string;
+  label: string;
+}
+
+const RRLS_FILTERS: FilterDef[] = [
+  { key: 'theme', label: 'Theme' },
+  { key: 'audience', label: 'Audience' },
+  { key: 'nature_of_threat', label: 'Nature of Threat' },
+  { key: 'level_of_escalation', label: 'Escalation' },
+  { key: 'line_type', label: 'Line Type' },
+  { key: 'threat_type', label: 'Threat Type' },
+  { key: 'specificity', label: 'Specificity' },
+  { key: 'immediacy', label: 'Immediacy' },
+];
+
+const NTS_FILTERS: FilterDef[] = [
+  { key: 'nts_statement_type', label: 'Statement Type' },
+  { key: 'nts_threat_type', label: 'Threat Type' },
+  { key: 'capability', label: 'Capability' },
+  { key: 'tone', label: 'Tone' },
+  { key: 'consequences', label: 'Consequences' },
+  { key: 'conditionality', label: 'Conditionality' },
+  { key: 'specificity', label: 'Specificity' },
+];
 
 export default function Statements() {
   const [mode, setMode] = useState<Mode>('rrls');
@@ -11,6 +37,7 @@ export default function Statements() {
   const [nts, setNts] = useState<NTSStatement[]>([]);
   const [search, setSearch] = useState('');
   const [sourceFilter, setSourceFilter] = useState('');
+  const [dimFilters, setDimFilters] = useState<Record<string, string>>({});
   const [page, setPage] = useState(0);
 
   useEffect(() => {
@@ -20,6 +47,21 @@ export default function Statements() {
 
   const data: (RRLSStatement | NTSStatement)[] = mode === 'rrls' ? rrls : nts;
   const sources = useMemo(() => [...new Set(data.map(r => r.source))].sort(), [data]);
+  const filterDefs = mode === 'rrls' ? RRLS_FILTERS : NTS_FILTERS;
+
+  // Extract unique values for each dimension filter
+  const dimOptions = useMemo(() => {
+    const opts: Record<string, string[]> = {};
+    for (const f of filterDefs) {
+      const vals = new Set<string>();
+      for (const r of data) {
+        const v = (r as unknown as Record<string, unknown>)[f.key] as string;
+        if (v) vals.add(v);
+      }
+      opts[f.key] = [...vals].sort();
+    }
+    return opts;
+  }, [data, filterDefs]);
 
   const filtered = useMemo(() => {
     let d = data;
@@ -32,14 +74,42 @@ export default function Statements() {
         (r.target || '').toLowerCase().includes(s)
       );
     }
+    // Apply dimension filters
+    for (const [key, val] of Object.entries(dimFilters)) {
+      if (val) {
+        d = d.filter(r => (r as unknown as Record<string, unknown>)[key] === val);
+      }
+    }
     return d;
-  }, [data, sourceFilter, search]);
+  }, [data, sourceFilter, search, dimFilters]);
 
   const PAGE_SIZE = 20;
   const pageData = filtered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
   const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
 
-  useEffect(() => setPage(0), [mode, sourceFilter, search]);
+  // Reset page when any filter changes
+  useEffect(() => setPage(0), [mode, sourceFilter, search, dimFilters]);
+
+  // Reset dimension filters when mode changes
+  const handleModeChange = useCallback((newMode: Mode) => {
+    setMode(newMode);
+    setDimFilters({});
+    setSourceFilter('');
+    setSearch('');
+  }, []);
+
+  const setDimFilter = useCallback((key: string, value: string) => {
+    setDimFilters(prev => ({ ...prev, [key]: value }));
+  }, []);
+
+  const activeFilterCount = Object.values(dimFilters).filter(Boolean).length +
+    (sourceFilter ? 1 : 0) + (search ? 1 : 0);
+
+  const clearAll = useCallback(() => {
+    setDimFilters({});
+    setSourceFilter('');
+    setSearch('');
+  }, []);
 
   return (
     <div className="tab-content">
@@ -47,15 +117,15 @@ export default function Statements() {
         Statement Browser
         <ChartInfo
           title="Statement Browser"
-          description="Browse and search individual RRLS and NTS statements. Filter by source or search text, speaker, and target fields. Each card shows the statement context, metadata tags, and classification labels."
+          description="Browse and search individual RRLS and NTS statements. Use the dropdown filters to narrow by taxonomy dimensions, source, or free-text search. Each card shows the statement context, metadata tags, and classification labels."
         />
       </h2>
 
       <div className="filter-bar">
-        <button className={`mode-btn ${mode === 'rrls' ? 'active-rrls' : ''}`} onClick={() => setMode('rrls')}>
+        <button className={`mode-btn ${mode === 'rrls' ? 'active-rrls' : ''}`} onClick={() => handleModeChange('rrls')}>
           RRLS ({rrls.length.toLocaleString()})
         </button>
-        <button className={`mode-btn ${mode === 'nts' ? 'active-nts' : ''}`} onClick={() => setMode('nts')}>
+        <button className={`mode-btn ${mode === 'nts' ? 'active-nts' : ''}`} onClick={() => handleModeChange('nts')}>
           NTS ({nts.length.toLocaleString()})
         </button>
 
@@ -71,6 +141,26 @@ export default function Statements() {
         />
 
         <span className="result-count">{filtered.length.toLocaleString()} results</span>
+      </div>
+
+      {/* Taxonomy dimension filter dropdowns */}
+      <div className="filter-bar dim-filters">
+        {filterDefs.map(f => (
+          <select
+            key={f.key}
+            value={dimFilters[f.key] || ''}
+            onChange={e => setDimFilter(f.key, e.target.value)}
+            title={f.label}
+          >
+            <option value="">{f.label}</option>
+            {(dimOptions[f.key] || []).map(v => <option key={v} value={v}>{v}</option>)}
+          </select>
+        ))}
+        {activeFilterCount > 0 && (
+          <button className="mode-btn" onClick={clearAll} style={{ fontSize: 12 }}>
+            Clear all ({activeFilterCount})
+          </button>
+        )}
       </div>
 
       <div className="stmt-list">

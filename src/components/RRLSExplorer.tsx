@@ -12,6 +12,22 @@ const DIM_LABELS: Record<string, string> = {
   line: 'Line Type', threat: 'Threat Type', specificity: 'Specificity',
   geopolitical_area_of_concern: 'Geopolitical Area', immediacy: 'Immediacy',
   unilateral_vs_multilateral: 'Unilateral/Multilateral', rhetorical_device: 'Rhetorical Device',
+  line_intensity: 'Line Intensity', threat_intensity: 'Threat Intensity',
+  overall_confidence: 'Overall Confidence',
+};
+
+// Fields in statements that are taxonomy dimensions (string-valued)
+const STMT_DIM_FIELDS = [
+  'theme', 'audience', 'level_of_escalation', 'nature_of_threat',
+  'underlying_values_or_interests', 'temporal_context', 'reciprocity', 'durability',
+  'specificity', 'geopolitical_area_of_concern', 'immediacy',
+  'unilateral_vs_multilateral', 'rhetorical_device',
+  'line_type', 'threat_type', 'line_intensity', 'threat_intensity', 'overall_confidence',
+];
+
+// Map statement field names to dimension keys (for fields that differ)
+const FIELD_TO_DIM: Record<string, string> = {
+  line_type: 'line', threat_type: 'threat',
 };
 
 export default function RRLSExplorer() {
@@ -31,14 +47,100 @@ export default function RRLSExplorer() {
     load<RRLSStatement[]>('rrls_statements.json').then(setStatements);
   }, []);
 
-  const dims = Object.keys(totals).sort((a, b) =>
+  // Compute totals dynamically from raw statements for dims not in pre-computed file
+  const dynamicTotals = useMemo(() => {
+    if (!statements.length) return {};
+    const result: Record<string, TaxonomyRow[]> = {};
+    for (const field of STMT_DIM_FIELDS) {
+      const dimKey = FIELD_TO_DIM[field] || field;
+      if (totals[dimKey]) continue; // already have pre-computed data
+      const counts: Record<string, number> = {};
+      for (const s of statements) {
+        const val = String((s as unknown as Record<string, unknown>)[field] ?? '');
+        if (val) counts[val] = (counts[val] || 0) + 1;
+      }
+      result[dimKey] = Object.entries(counts)
+        .sort((a, b) => b[1] - a[1])
+        .map(([value, count]) => ({ value, count }));
+    }
+    return result;
+  }, [statements, totals]);
+
+  const mergedTotals = useMemo(() => ({ ...totals, ...dynamicTotals }), [totals, dynamicTotals]);
+
+  const dims = Object.keys(mergedTotals).sort((a, b) =>
     (DIM_LABELS[a] || a).localeCompare(DIM_LABELS[b] || b)
   );
   const allDims = Object.keys(DIM_LABELS).sort((a, b) =>
     (DIM_LABELS[a] || a).localeCompare(DIM_LABELS[b] || b)
   );
-  const rows = totals[selectedDim] || [];
+  const rows = mergedTotals[selectedDim] || [];
   const totalCount = rows.reduce((s, r) => s + r.count, 0);
+
+  // Compute per-source taxonomy for dims not in pre-computed file
+  const dynamicTaxonomy = useMemo(() => {
+    if (!statements.length) return {};
+    const result: Record<string, TaxonomyRow[]> = {};
+    for (const field of STMT_DIM_FIELDS) {
+      const dimKey = FIELD_TO_DIM[field] || field;
+      if (taxonomy[dimKey]) continue;
+      const counts: Record<string, Record<string, number>> = {};
+      for (const s of statements) {
+        const val = String((s as unknown as Record<string, unknown>)[field] ?? '');
+        if (!val) continue;
+        const src = s.source || '';
+        if (!counts[src]) counts[src] = {};
+        counts[src][val] = (counts[src][val] || 0) + 1;
+      }
+      const rows: TaxonomyRow[] = [];
+      for (const [source, vals] of Object.entries(counts)) {
+        for (const [value, count] of Object.entries(vals)) {
+          rows.push({ value, count, source });
+        }
+      }
+      result[dimKey] = rows;
+    }
+    return result;
+  }, [statements, taxonomy]);
+
+  const mergedTaxonomy = useMemo(() => ({ ...taxonomy, ...dynamicTaxonomy }), [taxonomy, dynamicTaxonomy]);
+
+  // Compute time series for dims not in pre-computed file
+  const dynamicTaxTime = useMemo(() => {
+    if (!statements.length) return {};
+    const result: Record<string, { month: string; value: string; count: number }[]> = {};
+    for (const field of STMT_DIM_FIELDS) {
+      const dimKey = FIELD_TO_DIM[field] || field;
+      if (taxTime[dimKey]) continue;
+      const counts: Record<string, Record<string, number>> = {};
+      for (const s of statements) {
+        if (!s.date) continue;
+        const month = s.date.slice(0, 7);
+        const val = String((s as unknown as Record<string, unknown>)[field] ?? '');
+        if (!val) continue;
+        const key = `${month}|${val}`;
+        if (!counts[key]) counts[key] = { m: month, v: val, c: 0 } as unknown as Record<string, number>;
+        counts[key] = { ...counts[key] };
+      }
+      // Simpler approach
+      const agg: Record<string, number> = {};
+      for (const s of statements) {
+        if (!s.date) continue;
+        const month = s.date.slice(0, 7);
+        const val = String((s as unknown as Record<string, unknown>)[field] ?? '');
+        if (!val) continue;
+        const key = `${month}|${val}`;
+        agg[key] = (agg[key] || 0) + 1;
+      }
+      result[dimKey] = Object.entries(agg).map(([key, count]) => {
+        const [month, value] = key.split('|');
+        return { month, value, count };
+      });
+    }
+    return result;
+  }, [statements, taxTime]);
+
+  const mergedTaxTime = useMemo(() => ({ ...taxTime, ...dynamicTaxTime }), [taxTime, dynamicTaxTime]);
 
   // Dynamic cross-tabulation from raw statements
   const crossRows = useMemo(() => {
@@ -71,7 +173,7 @@ export default function RRLSExplorer() {
   const z = dim1Vals.map(d1 => dim2Vals.map(d2 => zMap[d1]?.[d2] || 0));
 
   // Time series for selected dim
-  const timeData = taxTime[selectedDim] || [];
+  const timeData = mergedTaxTime[selectedDim] || [];
   const timeValues = [...new Set(timeData.map(r => r.value))].slice(0, 8);
   const timeMonths = [...new Set(timeData.map(r => r.month))].sort();
 
@@ -190,7 +292,7 @@ export default function RRLSExplorer() {
       </div>
 
       {/* Source breakdown for selected dim */}
-      {taxonomy[selectedDim] && (
+      {mergedTaxonomy[selectedDim] && (
         <div className="chart-row">
           <div className="chart-box">
             <div className="chart-title-bar">
@@ -203,7 +305,7 @@ export default function RRLSExplorer() {
             <Plot
               data={(() => {
                 const bySource: Record<string, Record<string, number>> = {};
-                for (const r of taxonomy[selectedDim]) {
+                for (const r of mergedTaxonomy[selectedDim]) {
                   if (!bySource[r.source!]) bySource[r.source!] = {};
                   bySource[r.source!][r.value] = (bySource[r.source!][r.value] || 0) + r.count;
                 }

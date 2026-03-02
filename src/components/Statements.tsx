@@ -31,6 +31,17 @@ const NTS_FILTERS: FilterDef[] = [
   { key: 'specificity', label: 'Specificity' },
 ];
 
+function highlightText(text: string, query: string): React.ReactNode {
+  if (!query) return text;
+  const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const parts = text.split(new RegExp(`(${escaped})`, 'gi'));
+  return parts.map((part, i) =>
+    part.toLowerCase() === query.toLowerCase()
+      ? <mark key={i} className="search-highlight">{part}</mark>
+      : part
+  );
+}
+
 export default function Statements() {
   const [mode, setMode] = useState<Mode>('rrls');
   const [rrls, setRrls] = useState<RRLSStatement[]>([]);
@@ -170,10 +181,10 @@ export default function Statements() {
               <span className="stmt-date">{stmt.date || 'No date'}</span>
               <span className="stmt-source">{stmt.source}</span>
               <span className="stmt-db">{stmt.db}</span>
-              {stmt.speaker && <span className="stmt-speaker">Speaker: {stmt.speaker}</span>}
-              {stmt.target && <span className="stmt-target">Target: {stmt.target}</span>}
+              {stmt.speaker && <span className="stmt-speaker">Speaker: {highlightText(stmt.speaker, search)}</span>}
+              {stmt.target && <span className="stmt-target">Target: {highlightText(stmt.target, search)}</span>}
             </div>
-            <div className="stmt-text">{stmt.context_text_span || '(no text)'}</div>
+            <div className="stmt-text">{stmt.context_text_span ? highlightText(stmt.context_text_span, search) : '(no text)'}</div>
             {mode === 'rrls' && (
               <div className="stmt-tags">
                 {(stmt as RRLSStatement).theme && <span className="tag tag-blue">{(stmt as RRLSStatement).theme}</span>}

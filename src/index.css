@@ -246,6 +246,13 @@ body {
 .stmt-speaker { color: var(--color-green); }
 .stmt-target { color: var(--color-nts); }
 
+.search-highlight {
+  background: #ffe600;
+  color: #1a1a2e;
+  padding: 1px 2px;
+  border-radius: 2px;
+}
+
 .stmt-text {
   font-size: 13px;
   line-height: 1.6;

@@ -112,7 +112,7 @@ export default function NTSExplorer() {
 
   return (
     <div className="tab-content">
-      <h2 style={{ color: '#ff7f0e' }}>Nuclear Threat Statements (NTS) Explorer</h2>
+      <h2 style={{ color: '#fdd835' }}>{'\u2622'} Nuclear Threat Statements (NTS) Explorer</h2>
 
       <div className="filter-bar">
         <label>Dimension:</label>
@@ -321,7 +321,7 @@ export default function NTSExplorer() {
               data={[{
                 type: 'heatmap',
                 x: ct2Vals, y: ct1Vals, z: ctZ,
-                colorscale: [[0, '#1a1a2e'], [0.5, '#ff7f0e'], [1, '#ffbb78']],
+                colorscale: [[0, '#1a1a2e'], [0.5, '#fdd835'], [1, '#fff9c4']],
                 text: ctZ.map(row => row.map(v => v.toString())),
                 texttemplate: '%{text}',
                 hovertemplate: `%{y} ${'\u00d7'} %{x}: %{z}<extra></extra>`,

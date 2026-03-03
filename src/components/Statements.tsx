@@ -50,6 +50,7 @@ export default function Statements() {
   const [search, setSearch] = useState('');
   const [sourceFilter, setSourceFilter] = useState('');
   const [dimFilters, setDimFilters] = useState<Record<string, string>>({});
+  const [minConfidence, setMinConfidence] = useState(7);
   const [page, setPage] = useState(0);
 
   useEffect(() => {
@@ -92,15 +93,19 @@ export default function Statements() {
         d = d.filter(r => (r as unknown as Record<string, unknown>)[key] === val);
       }
     }
+    // Apply confidence filter
+    if (minConfidence > 7) {
+      d = d.filter(r => (r.overall_confidence ?? 0) >= minConfidence);
+    }
     return d;
-  }, [data, sourceFilter, search, dimFilters]);
+  }, [data, sourceFilter, search, dimFilters, minConfidence]);
 
   const PAGE_SIZE = 20;
   const pageData = filtered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
   const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
 
   // Reset page when any filter changes
-  useEffect(() => setPage(0), [mode, sourceFilter, search, dimFilters]);
+  useEffect(() => setPage(0), [mode, sourceFilter, search, dimFilters, minConfidence]);
 
   // Reset dimension filters when mode changes
   const handleModeChange = useCallback((newMode: Mode) => {
@@ -108,6 +113,7 @@ export default function Statements() {
     setDimFilters({});
     setSourceFilter('');
     setSearch('');
+    setMinConfidence(7);
   }, []);
 
   const setDimFilter = useCallback((key: string, value: string) => {
@@ -115,12 +121,13 @@ export default function Statements() {
   }, []);
 
   const activeFilterCount = Object.values(dimFilters).filter(Boolean).length +
-    (sourceFilter ? 1 : 0) + (search ? 1 : 0);
+    (sourceFilter ? 1 : 0) + (search ? 1 : 0) + (minConfidence > 7 ? 1 : 0);
 
   const clearAll = useCallback(() => {
     setDimFilters({});
     setSourceFilter('');
     setSearch('');
+    setMinConfidence(7);
   }, []);
 
   return (
@@ -138,7 +145,7 @@ export default function Statements() {
           RRLS ({rrls.length.toLocaleString()})
         </button>
         <button className={`mode-btn ${mode === 'nts' ? 'active-nts' : ''}`} onClick={() => handleModeChange('nts')}>
-          NTS ({nts.length.toLocaleString()})
+          {'\u2622'} NTS ({nts.length.toLocaleString()})
         </button>
 
         <select value={sourceFilter} onChange={e => setSourceFilter(e.target.value)}>
@@ -151,6 +158,16 @@ export default function Statements() {
           value={search} onChange={e => setSearch(e.target.value)}
           className="search-input"
         />
+
+        <div className="confidence-slider">
+          <label>Confidence {'\u2265'}</label>
+          <input
+            type="range" min={7} max={10} step={1}
+            value={minConfidence}
+            onChange={e => setMinConfidence(Number(e.target.value))}
+          />
+          <span className="conf-value">{minConfidence}</span>
+        </div>
 
         <span className="result-count">{filtered.length.toLocaleString()} results</span>
       </div>
@@ -182,6 +199,7 @@ export default function Statements() {
               <span className="stmt-date">{stmt.date || 'No date'}</span>
               <span className="stmt-source">{stmt.source}</span>
               <span className="stmt-db">{stmt.db}</span>
+              {stmt.overall_confidence && <span className="stmt-db">Conf: {stmt.overall_confidence}/10</span>}
               {stmt.speaker && <span className="stmt-speaker">Speaker: {highlightText(stmt.speaker, search)}</span>}
               {stmt.target && <span className="stmt-target">Target: {highlightText(stmt.target, search)}</span>}
             </div>

@@ -42,8 +42,8 @@ export default function TimeSeries() {
   const crlsRate = allMonths.map(m => chunksM[m] ? ((crlsM[m] || 0) / chunksM[m]) * 100 : 0);
 
   // Consistent statement type colors
-  const RRLS_COLOR = '#1f77b4';
-  const NTS_COLOR = '#ff7f0e';
+  const RRLS_COLOR = '#d32f2f';
+  const NTS_COLOR = '#fdd835';
   const CRLS_COLOR = '#d62728';
 
   return (

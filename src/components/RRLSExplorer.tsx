@@ -211,7 +211,7 @@ export default function RRLSExplorer() {
 
   return (
     <div className="tab-content">
-      <h2 style={{ color: '#1f77b4' }}>RRLS Taxonomy Explorer</h2>
+      <h2 style={{ color: '#d32f2f' }}>RRLS Taxonomy Explorer</h2>
 
       <div className="filter-bar">
         <label>Dimension:</label>
@@ -512,7 +512,7 @@ export default function RRLSExplorer() {
               data={[{
                 type: 'heatmap',
                 x: dim2Vals, y: dim1Vals, z,
-                colorscale: [[0, '#1a1a2e'], [0.5, '#1f77b4'], [1, '#4fc3f7']],
+                colorscale: [[0, '#1a1a2e'], [0.5, '#d32f2f'], [1, '#ef9a9a']],
                 text: z.map(row => row.map(v => v.toString())),
                 texttemplate: '%{text}',
                 hovertemplate: `%{y} ${'\u00d7'} %{x}: %{z}<extra></extra>`,

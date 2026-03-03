@@ -19,10 +19,10 @@ warnings.filterwarnings("ignore", category=UserWarning)
 
 # ── DB config ────────────────────────────────────────────────────────────────
 
-_HOST = os.environ.get("DB_HOST", "REDACTED_HOST")
+_HOST = os.environ["DB_HOST"]
 _PORT = int(os.environ.get("DB_PORT", "5432"))
 _USER = os.environ.get("DB_USER", "postgres")
-_PASS = os.environ.get("DB_PASSWORD", "REDACTED_PASSWORD")
+_PASS = os.environ["DB_PASSWORD"]
 
 RL_DB = dict(host=_HOST, port=_PORT, dbname="redlines", user=_USER, password=_PASS)
 WAR_DB = dict(host=_HOST, port=_PORT, dbname="war_datasets", user=_USER, password=_PASS)

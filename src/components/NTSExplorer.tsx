@@ -109,6 +109,8 @@ export default function NTSExplorer() {
   const ctZ = ct1Vals.map(d1 => ct2Vals.map(d2 => ctMap[d1]?.[d2] || 0));
 
   const dimLabel = DIM_LABELS[selectedDim] || selectedDim;
+  // Prefix ☢ on bar value labels
+  const ntsLabel = (v: string) => `\u2622 ${v}`;
 
   return (
     <div className="tab-content">
@@ -145,7 +147,7 @@ export default function NTSExplorer() {
             data={[{
               type: 'bar',
               x: rows.map(r => r.count),
-              y: rows.map(r => r.value),
+              y: rows.map(r => ntsLabel(r.value)),
               orientation: 'h',
               marker: { color: rows.map((r, i) => getDimValueColor(NTS_COLORS, selectedDim, r.value, i)) },
               text: rows.map(r => r.count.toString()),
@@ -154,7 +156,7 @@ export default function NTSExplorer() {
             layout={{
               paper_bgcolor: 'transparent', plot_bgcolor: 'transparent',
               font: { color: '#e0e0e0' },
-              margin: { t: 10, b: 20, l: 220, r: 60 },
+              margin: { t: 10, b: 20, l: 240, r: 60 },
               height: Math.max(300, rows.length * 30),
               yaxis: { autorange: 'reversed' },
               xaxis: { title: 'Count' },
@@ -167,7 +169,7 @@ export default function NTSExplorer() {
         {/* Relative percentages */}
         <div className="chart-box">
           <div className="chart-title-bar">
-            <h4>{dimLabel} — % of NTS</h4>
+            <h4>{dimLabel} — % of {'\u2622'} NTS</h4>
             <ChartInfo
               title={`${dimLabel} — Relative Share`}
               description="Horizontal bar chart showing what percentage of all NTS statements each value represents for the selected dimension."
@@ -177,7 +179,7 @@ export default function NTSExplorer() {
             data={[{
               type: 'bar',
               x: rows.map(r => totalCount > 0 ? (r.count / totalCount) * 100 : 0),
-              y: rows.map(r => r.value),
+              y: rows.map(r => ntsLabel(r.value)),
               orientation: 'h',
               marker: { color: rows.map((r, i) => getDimValueColor(NTS_COLORS, selectedDim, r.value, i)) },
               text: rows.map(r => totalCount > 0 ? ((r.count / totalCount) * 100).toFixed(1) + '%' : '0%'),
@@ -189,7 +191,7 @@ export default function NTSExplorer() {
               margin: { t: 10, b: 20, l: 220, r: 60 },
               height: Math.max(300, rows.length * 30),
               yaxis: { autorange: 'reversed' },
-              xaxis: { title: '% of NTS Statements', ticksuffix: '%' },
+              xaxis: { title: '% of \u2622 NTS Statements', ticksuffix: '%' },
             }}
             config={{ displayModeBar: false, responsive: true }}
             style={{ width: '100%' }}
@@ -266,7 +268,7 @@ export default function NTSExplorer() {
                   <Plot
                     data={vals.map((v, i) => ({
                       type: 'bar' as const,
-                      name: v,
+                      name: ntsLabel(v),
                       x: months,
                       y: months.map(m => agg[m]?.[v] || 0),
                       marker: { color: getDimValueColor(NTS_COLORS, dim, v, i) },
@@ -320,7 +322,7 @@ export default function NTSExplorer() {
             <Plot
               data={[{
                 type: 'heatmap',
-                x: ct2Vals, y: ct1Vals, z: ctZ,
+                x: ct2Vals.map(ntsLabel), y: ct1Vals.map(ntsLabel), z: ctZ,
                 colorscale: [[0, '#1a1a2e'], [0.5, '#fdd835'], [1, '#fff9c4']],
                 text: ctZ.map(row => row.map(v => v.toString())),
                 texttemplate: '%{text}',

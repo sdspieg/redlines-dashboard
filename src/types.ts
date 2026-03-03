@@ -134,4 +134,91 @@ export interface ComparativeRow {
   nts: number;
 }
 
-export type TabId = 'overview' | 'rrls' | 'nts' | 'crls' | 'timeseries' | 'statements';
+export type TabId = 'overview' | 'rrls' | 'nts' | 'crls' | 'timeseries' | 'statements' | 'analytics';
+
+// ── Causal Analytics types ─────────────────────────────────────────────────
+
+export interface CrossCorrPair {
+  rhetoric_var: string;
+  action_var: string;
+  rhetoric_label: string;
+  action_label: string;
+  correlations: { lag: number; r: number }[];
+  ci_bound: number;
+}
+
+export interface GrangerResult {
+  cause: string;
+  effect: string;
+  cause_label: string;
+  effect_label: string;
+  lags: Record<string, { f_pvalue: number; chi2_pvalue: number }>;
+  best_lag: number;
+  best_pvalue: number;
+}
+
+export interface IRFData {
+  impulse: string;
+  response: string;
+  impulse_label: string;
+  response_label: string;
+  horizons: number[];
+  point: number[];
+  ci_lower: number[] | null;
+  ci_upper: number[] | null;
+  cumulative: number[];
+  cum_ci_lower: number[] | null;
+  cum_ci_upper: number[] | null;
+}
+
+export interface VARModel {
+  name: string;
+  variables: string[];
+  variable_labels: Record<string, string>;
+  optimal_lag: number;
+  aic: number | null;
+  irfs: Record<string, IRFData>;
+}
+
+export interface LPResult {
+  impulse: string;
+  response: string;
+  impulse_label: string;
+  response_label: string;
+  horizons: number[];
+  point: number[];
+  ci_lower: number[];
+  ci_upper: number[];
+}
+
+export interface EventStudyResponse {
+  variable: string;
+  label: string;
+  window: number[];
+  mean_abnormal: number[];
+  se: number[];
+  cumulative: number[];
+}
+
+export interface EventStudy {
+  spike_variable: string;
+  spike_label: string;
+  threshold: number;
+  n_spikes: number;
+  spike_weeks: string[];
+  responses: Record<string, EventStudyResponse>;
+}
+
+export interface AnalyticsMetadata {
+  n_weeks: number;
+  date_min: string;
+  date_max: string;
+  variables: Record<string, string>;
+  rhetoric_vars: string[];
+  action_vars: string[];
+  media_vars: string[];
+  stationarity: Record<string, { statistic: number | null; pvalue: number | null; stationary: boolean | null }>;
+  var_models: string[];
+  lp_pairs: [string, string][];
+  warnings: string[];
+}

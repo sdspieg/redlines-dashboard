@@ -27,31 +27,40 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Install psycopg2
-        run: pip install psycopg2-binary
+      - name: Install Python dependencies
+        run: pip install psycopg2-binary numpy pandas statsmodels scipy
 
-      - name: Checkout export script from main
+      - name: Checkout export scripts from main
         uses: actions/checkout@v4
         with:
           ref: master
           path: _src
-          sparse-checkout: scripts/export_redlines_data.py
+          sparse-checkout: |
+            scripts/export_redlines_data.py
+            scripts/export_analytics_data.py
 
-      - name: Run export
+      - name: Run redlines export
         env:
           DB_HOST: ${{ secrets.DB_HOST }}
           DB_PORT: ${{ secrets.DB_PORT }}
           DB_USER: ${{ secrets.DB_USER }}
           DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
         run: |
-          # The script writes to public/data/ relative to its parent.
-          # We're on gh-pages where data/ is at the root.
-          # Adjust: run from _src, then copy output over.
           cd _src
           mkdir -p public/data
           python scripts/export_redlines_data.py
-          # Copy fresh JSON files to gh-pages data/
           cp public/data/*.json ../data/
+
+      - name: Run analytics export
+        env:
+          DB_HOST: ${{ secrets.DB_HOST }}
+          DB_PORT: ${{ secrets.DB_PORT }}
+          DB_USER: ${{ secrets.DB_USER }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+        run: |
+          cd _src
+          python scripts/export_analytics_data.py
+          cp public/data/analytics_*.json ../data/
 
       - name: Commit and push if data changed
         run: |

@@ -7,6 +7,7 @@ const TABS: { id: TabId; label: string; color: string }[] = [
   { id: 'crls', label: 'CRLS', color: '#d62728' },
   { id: 'timeseries', label: 'Time Series', color: '#2ca02c' },
   { id: 'statements', label: 'Statement Browser', color: '#9467bd' },
+  { id: 'analytics', label: 'Causal Analytics', color: '#4fc3f7' },
 ];
 
 export default function TabNav({ active, onChange }: { active: TabId; onChange: (t: TabId) => void }) {

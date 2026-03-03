@@ -187,7 +187,11 @@ def export_all():
         "unilateral_vs_multilateral", "rhetorical_device",
     ]
     _CIVI_VAL = "CASE WHEN tp.civilizational_framing THEN 'Civilizational' ELSE ra.theme END"
-    _CIVI_JOIN = "LEFT JOIN rls_annotation_third_pass tp ON tp.chunk_id = ra.chunk_id"
+    _CIVI_JOIN = """LEFT JOIN (
+        SELECT chunk_id, bool_or(civilizational_framing) AS civilizational_framing
+        FROM rls_annotation_third_pass
+        GROUP BY chunk_id
+    ) tp ON tp.chunk_id = ra.chunk_id"""
     taxonomy = {}
     for dim in RLS_DIMS:
         val = _CIVI_VAL if dim == "theme" else dim
@@ -347,7 +351,11 @@ def export_all():
                ra.unilateral_vs_multilateral, ra.rhetorical_device,
                ra.overall_confidence
         FROM rls_annotation ra
-        LEFT JOIN rls_annotation_third_pass tp ON tp.chunk_id = ra.chunk_id
+        LEFT JOIN (
+            SELECT chunk_id, bool_or(civilizational_framing) AS civilizational_framing
+            FROM rls_annotation_third_pass
+            GROUP BY chunk_id
+        ) tp ON tp.chunk_id = ra.chunk_id
         JOIN document_chunk dc ON ra.chunk_id = dc.id
         JOIN document d ON dc.document_id = d.id
         WHERE ra.is_relevant

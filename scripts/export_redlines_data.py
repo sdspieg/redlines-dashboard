@@ -3,8 +3,9 @@
 
 import json
 import os
-import datetime as dt
 from pathlib import Path
+from typing import Any
+
 import psycopg2
 import psycopg2.extras
 
@@ -22,20 +23,20 @@ OUT = Path(__file__).resolve().parent.parent / "public" / "data"
 OUT.mkdir(parents=True, exist_ok=True)
 
 
-def save(data, name):
+def save(data: Any, name: str) -> None:
     path = OUT / name
     with open(path, "w") as f:
         json.dump(data, f, default=str, separators=(",", ":"))
     print(f"  {name}: {len(json.dumps(data, default=str)) // 1024}KB")
 
 
-def q(conn, sql):
+def q(conn: Any, sql: str) -> list[dict[str, Any]]:
     with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
         cur.execute(sql)
         return [dict(r) for r in cur.fetchall()]
 
 
-def qone(conn, sql):
+def qone(conn: Any, sql: str) -> dict[str, Any]:
     rows = q(conn, sql)
     return rows[0] if rows else {}
 
@@ -46,7 +47,9 @@ def export_all():
 
     # ── 1. Overview stats ────────────────────────────────────────────────
     print("\n[1] Overview stats")
-    stats = qone(conn, """
+    stats = qone(
+        conn,
+        """
         SELECT
             (SELECT COUNT(DISTINCT id) FROM document) AS total_docs,
             (SELECT COUNT(DISTINCT id) FROM document_chunk) AS total_chunks,
@@ -64,12 +67,15 @@ def export_all():
             (SELECT COUNT(DISTINCT d.source) FROM document d) AS total_sources,
             (SELECT MIN(d.date) FROM document d WHERE d.date IS NOT NULL) AS date_min,
             (SELECT MAX(d.date) FROM document d WHERE d.date IS NOT NULL) AS date_max
-    """)
+    """,
+    )
     save(stats, "overview_stats.json")
 
     # ── 2. Chunks per source (denominator) ───────────────────────────────
     print("[2] Chunks by source")
-    chunks_src = q(conn, """
+    chunks_src = q(
+        conn,
+        """
         SELECT d.source, d."database" AS db,
                COUNT(DISTINCT dc.id) AS total_chunks,
                COUNT(DISTINCT d.id) AS total_docs,
@@ -78,12 +84,15 @@ def export_all():
         JOIN document_chunk dc ON dc.document_id = d.id
         GROUP BY d.source, d."database"
         ORDER BY total_chunks DESC
-    """)
+    """,
+    )
     save(chunks_src, "chunks_by_source.json")
 
     # ── 3. RRLS by source ────────────────────────────────────────────────
     print("[3] RRLS by source")
-    rrls_src = q(conn, """
+    rrls_src = q(
+        conn,
+        """
         SELECT d.source, d."database" AS db,
                COUNT(*) AS count,
                COUNT(*) FILTER (WHERE ra.is_relevant) AS confirmed
@@ -92,12 +101,15 @@ def export_all():
         JOIN document d ON dc.document_id = d.id
         GROUP BY d.source, d."database"
         ORDER BY confirmed DESC
-    """)
+    """,
+    )
     save(rrls_src, "rrls_by_source.json")
 
     # ── 4. NTS by source ─────────────────────────────────────────────────
     print("[4] NTS by source")
-    nts_src = q(conn, """
+    nts_src = q(
+        conn,
+        """
         SELECT d.source, d."database" AS db,
                COUNT(*) AS count,
                COUNT(*) FILTER (WHERE na.is_relevant) AS confirmed
@@ -106,12 +118,15 @@ def export_all():
         JOIN document d ON dc.document_id = d.id
         GROUP BY d.source, d."database"
         ORDER BY confirmed DESC
-    """)
+    """,
+    )
     save(nts_src, "nts_by_source.json")
 
     # ── 5. CRLS by source ────────────────────────────────────────────────
     print("[5] CRLS by source")
-    crls_src = q(conn, """
+    crls_src = q(
+        conn,
+        """
         SELECT d.source, d."database" AS db,
                COUNT(*) AS count,
                COUNT(*) FILTER (WHERE tp.civilizational_framing) AS crls
@@ -121,12 +136,15 @@ def export_all():
         WHERE tp.is_relevant
         GROUP BY d.source, d."database"
         ORDER BY crls DESC
-    """)
+    """,
+    )
     save(crls_src, "crls_by_source.json")
 
     # ── 6. Monthly time series ───────────────────────────────────────────
     print("[6] Monthly time series")
-    rrls_monthly = q(conn, """
+    rrls_monthly = q(
+        conn,
+        """
         SELECT TO_CHAR(DATE_TRUNC('month', d.date), 'YYYY-MM') AS month,
                d.source,
                COUNT(*) AS count
@@ -136,10 +154,13 @@ def export_all():
         WHERE ra.is_relevant AND d.date IS NOT NULL
         GROUP BY DATE_TRUNC('month', d.date), d.source
         ORDER BY month
-    """)
+    """,
+    )
     save(rrls_monthly, "rrls_monthly.json")
 
-    nts_monthly = q(conn, """
+    nts_monthly = q(
+        conn,
+        """
         SELECT TO_CHAR(DATE_TRUNC('month', d.date), 'YYYY-MM') AS month,
                d.source,
                COUNT(*) AS count
@@ -149,10 +170,13 @@ def export_all():
         WHERE na.is_relevant AND d.date IS NOT NULL
         GROUP BY DATE_TRUNC('month', d.date), d.source
         ORDER BY month
-    """)
+    """,
+    )
     save(nts_monthly, "nts_monthly.json")
 
-    crls_monthly = q(conn, """
+    crls_monthly = q(
+        conn,
+        """
         SELECT TO_CHAR(DATE_TRUNC('month', d.date), 'YYYY-MM') AS month,
                d.source,
                COUNT(*) AS count
@@ -162,11 +186,14 @@ def export_all():
         WHERE tp.is_relevant AND tp.civilizational_framing AND d.date IS NOT NULL
         GROUP BY DATE_TRUNC('month', d.date), d.source
         ORDER BY month
-    """)
+    """,
+    )
     save(crls_monthly, "crls_monthly.json")
 
     # Chunks monthly (denominator for relative)
-    chunks_monthly = q(conn, """
+    chunks_monthly = q(
+        conn,
+        """
         SELECT TO_CHAR(DATE_TRUNC('month', d.date), 'YYYY-MM') AS month,
                COUNT(DISTINCT dc.id) AS total_chunks
         FROM document d
@@ -174,19 +201,32 @@ def export_all():
         WHERE d.date IS NOT NULL
         GROUP BY DATE_TRUNC('month', d.date)
         ORDER BY month
-    """)
+    """,
+    )
     save(chunks_monthly, "chunks_monthly.json")
 
     # ── 7. RRLS taxonomy dimensions ──────────────────────────────────────
     print("[7] RRLS taxonomy")
     RLS_DIMS = [
-        "theme", "audience", "level_of_escalation", "nature_of_threat",
-        "underlying_values_or_interests", "temporal_context", "reciprocity",
-        "durability", "line", "threat", "specificity",
-        "geopolitical_area_of_concern", "immediacy",
-        "unilateral_vs_multilateral", "rhetorical_device",
+        "theme",
+        "audience",
+        "level_of_escalation",
+        "nature_of_threat",
+        "underlying_values_or_interests",
+        "temporal_context",
+        "reciprocity",
+        "durability",
+        "line",
+        "threat",
+        "specificity",
+        "geopolitical_area_of_concern",
+        "immediacy",
+        "unilateral_vs_multilateral",
+        "rhetorical_device",
     ]
-    _CIVI_VAL = "CASE WHEN tp.civilizational_framing THEN 'Civilizational' ELSE ra.theme END"
+    _CIVI_VAL = (
+        "CASE WHEN tp.civilizational_framing THEN 'Civilizational' ELSE ra.theme END"
+    )
     _CIVI_JOIN = """LEFT JOIN (
         SELECT chunk_id, bool_or(civilizational_framing) AS civilizational_framing
         FROM rls_annotation_third_pass
@@ -197,7 +237,9 @@ def export_all():
         val = _CIVI_VAL if dim == "theme" else dim
         tp_join = _CIVI_JOIN if dim == "theme" else ""
         null_ref = f"ra.{dim}" if dim == "theme" else dim
-        rows = q(conn, f"""
+        rows = q(
+            conn,
+            f"""
             SELECT {val} AS value, COUNT(*) AS count,
                    d.source
             FROM rls_annotation ra
@@ -207,7 +249,8 @@ def export_all():
             WHERE ra.is_relevant AND {null_ref} IS NOT NULL
             GROUP BY {val}, d.source
             ORDER BY count DESC
-        """)
+        """,
+        )
         taxonomy[dim] = rows
     save(taxonomy, "rrls_taxonomy.json")
 
@@ -217,41 +260,59 @@ def export_all():
         val = _CIVI_VAL if dim == "theme" else dim
         tp_join = _CIVI_JOIN if dim == "theme" else ""
         null_ref = f"ra.{dim}" if dim == "theme" else dim
-        rows = q(conn, f"""
+        rows = q(
+            conn,
+            f"""
             SELECT {val} AS value, COUNT(*) AS count
             FROM rls_annotation ra
             {tp_join}
             WHERE ra.is_relevant AND {null_ref} IS NOT NULL
             GROUP BY {val}
             ORDER BY count DESC
-        """)
+        """,
+        )
         tax_totals[dim] = rows
     save(tax_totals, "rrls_taxonomy_totals.json")
 
     # ── 8. NTS taxonomy dimensions ───────────────────────────────────────
     print("[8] NTS taxonomy")
     NTS_DIMS = [
-        "nts_statement_type", "nts_threat_type", "capability", "delivery_system",
-        "conditionality", "purpose", "tone", "context",
-        "geographical_reach", "consequences", "timeline",
-        "arms_control_and_testing", "audience", "specificity",
+        "nts_statement_type",
+        "nts_threat_type",
+        "capability",
+        "delivery_system",
+        "conditionality",
+        "purpose",
+        "tone",
+        "context",
+        "geographical_reach",
+        "consequences",
+        "timeline",
+        "arms_control_and_testing",
+        "audience",
+        "specificity",
         "rhetorical_device",
     ]
     nts_taxonomy = {}
     for dim in NTS_DIMS:
-        rows = q(conn, f"""
+        rows = q(
+            conn,
+            f"""
             SELECT {dim} AS value, COUNT(*) AS count
             FROM nts_annotation na
             WHERE na.is_relevant AND {dim} IS NOT NULL
             GROUP BY {dim}
             ORDER BY count DESC
-        """)
+        """,
+        )
         nts_taxonomy[dim] = rows
     save(nts_taxonomy, "nts_taxonomy.json")
 
     # ── 9. NTS severity over time ────────────────────────────────────────
     print("[9] NTS severity over time")
-    nts_severity = q(conn, """
+    nts_severity = q(
+        conn,
+        """
         SELECT TO_CHAR(DATE_TRUNC('month', d.date), 'YYYY-MM') AS month,
                na.tone, na.conditionality, na.consequences, na.specificity,
                COUNT(*) AS count
@@ -261,22 +322,28 @@ def export_all():
         WHERE na.is_relevant AND d.date IS NOT NULL
         GROUP BY DATE_TRUNC('month', d.date), na.tone, na.conditionality, na.consequences, na.specificity
         ORDER BY month
-    """)
+    """,
+    )
     save(nts_severity, "nts_severity_monthly.json")
 
     # ── 10. CRLS framing types ───────────────────────────────────────────
     print("[10] CRLS framing types")
-    crls_framing = q(conn, """
+    crls_framing = q(
+        conn,
+        """
         SELECT unnest(civilizational_framing_type) AS framing_type, COUNT(*) AS count
         FROM rls_annotation_third_pass tp
         WHERE tp.is_relevant AND tp.civilizational_framing
         GROUP BY framing_type
         ORDER BY count DESC
-    """)
+    """,
+    )
     save(crls_framing, "crls_framing_types.json")
 
     # CRLS sphere of influence
-    crls_territories = q(conn, """
+    crls_territories = q(
+        conn,
+        """
         SELECT TRIM(t) AS territory, COUNT(*) AS count
         FROM rls_annotation_third_pass tp,
              unnest(string_to_array(tp.territories_or_countries_mentioned, ',')) AS t
@@ -284,7 +351,8 @@ def export_all():
               AND tp.territories_or_countries_mentioned IS NOT NULL
         GROUP BY TRIM(t)
         ORDER BY count DESC
-    """)
+    """,
+    )
     save(crls_territories, "crls_territories.json")
 
     # ── 11. RRLS cross-tabulations ───────────────────────────────────────
@@ -303,14 +371,17 @@ def export_all():
         d2 = _CIVI_VAL if dim2 == "theme" else (f"ra.{dim2}" if has_theme else dim2)
         nr1 = f"ra.{dim1}" if has_theme else dim1
         nr2 = f"ra.{dim2}" if has_theme else dim2
-        rows = q(conn, f"""
+        rows = q(
+            conn,
+            f"""
             SELECT {d1} AS dim1, {d2} AS dim2, COUNT(*) AS count
             FROM rls_annotation ra
             {tp_join}
             WHERE ra.is_relevant AND {nr1} IS NOT NULL AND {nr2} IS NOT NULL
             GROUP BY {d1}, {d2}
             ORDER BY count DESC
-        """)
+        """,
+        )
         cross_data[f"{dim1}_x_{dim2}"] = rows
     save(cross_data, "rrls_cross_tabs.json")
 
@@ -321,7 +392,9 @@ def export_all():
         val = _CIVI_VAL if dim == "theme" else dim
         tp_join = _CIVI_JOIN if dim == "theme" else ""
         null_ref = f"ra.{dim}" if dim == "theme" else dim
-        rows = q(conn, f"""
+        rows = q(
+            conn,
+            f"""
             SELECT TO_CHAR(DATE_TRUNC('month', d.date), 'YYYY-MM') AS month,
                    {val} AS value, COUNT(*) AS count
             FROM rls_annotation ra
@@ -331,13 +404,16 @@ def export_all():
             WHERE ra.is_relevant AND d.date IS NOT NULL AND {null_ref} IS NOT NULL
             GROUP BY DATE_TRUNC('month', d.date), {val}
             ORDER BY month
-        """)
+        """,
+        )
         tax_time[dim] = rows
     save(tax_time, "rrls_taxonomy_time.json")
 
     # ── 13. Statement browser data (RRLS) ────────────────────────────────
     print("[13] RRLS statements")
-    rrls_stmts = q(conn, """
+    rrls_stmts = q(
+        conn,
+        """
         SELECT ra.chunk_id, d.date, d.source, d."database" AS db,
                ra.context_text_span, ra.source AS speaker, ra.target,
                ra.line_text_span, ra.threat_text_span,
@@ -360,12 +436,15 @@ def export_all():
         JOIN document d ON dc.document_id = d.id
         WHERE ra.is_relevant
         ORDER BY d.date DESC NULLS LAST
-    """)
+    """,
+    )
     save(rrls_stmts, "rrls_statements.json")
 
     # ── 14. Statement browser data (NTS) ─────────────────────────────────
     print("[14] NTS statements")
-    nts_stmts = q(conn, """
+    nts_stmts = q(
+        conn,
+        """
         SELECT na.chunk_id, d.date, d.source, d."database" AS db,
                na.context_text_span, na.source AS speaker, na.target,
                na.threat_text_span,
@@ -380,12 +459,15 @@ def export_all():
         JOIN document d ON dc.document_id = d.id
         WHERE na.is_relevant
         ORDER BY d.date DESC NULLS LAST
-    """)
+    """,
+    )
     save(nts_stmts, "nts_statements.json")
 
     # ── 15. Comparative: by database group ───────────────────────────────
     print("[15] Comparative by database")
-    comp_db = q(conn, """
+    comp_db = q(
+        conn,
+        """
         SELECT d."database" AS db,
                COUNT(DISTINCT dc.id) AS total_chunks,
                COUNT(DISTINCT CASE WHEN ra.is_relevant THEN ra.chunk_id END) AS rrls,
@@ -396,12 +478,15 @@ def export_all():
         LEFT JOIN nts_annotation na ON na.chunk_id = dc.id
         GROUP BY d."database"
         ORDER BY total_chunks DESC
-    """)
+    """,
+    )
     save(comp_db, "comparative_by_db.json")
 
     # ── 16. RRLS intensity / confidence distributions ────────────────────
     print("[16] Intensity distributions")
-    intensity = q(conn, """
+    intensity = q(
+        conn,
+        """
         SELECT line_intensity, threat_intensity,
                ROUND(overall_confidence::numeric, 0) AS confidence_bin,
                COUNT(*) AS count
@@ -409,7 +494,8 @@ def export_all():
         WHERE ra.is_relevant
         GROUP BY line_intensity, threat_intensity, confidence_bin
         ORDER BY count DESC
-    """)
+    """,
+    )
     save(intensity, "rrls_intensity.json")
 
     conn.close()
@@ -418,7 +504,9 @@ def export_all():
     print("\n[17] War context from war_datasets")
     try:
         wconn = psycopg2.connect(**WAR_DB)
-        equip_monthly = q(wconn, """
+        equip_monthly = q(
+            wconn,
+            """
             WITH daily AS (
                 SELECT date,
                        personnel - LAG(personnel) OVER (ORDER BY date) AS pers_delta
@@ -431,10 +519,13 @@ def export_all():
             WHERE pers_delta IS NOT NULL
             GROUP BY TO_CHAR(date, 'YYYY-MM')
             ORDER BY month
-        """)
+        """,
+        )
         save(equip_monthly, "war_context_personnel.json")
 
-        acled_monthly = q(wconn, """
+        acled_monthly = q(
+            wconn,
+            """
             SELECT TO_CHAR(event_date, 'YYYY-MM') AS month,
                    COUNT(*) AS events,
                    SUM(fatalities) AS fatalities
@@ -442,7 +533,8 @@ def export_all():
             WHERE event_date >= '2022-02-24'
             GROUP BY TO_CHAR(event_date, 'YYYY-MM')
             ORDER BY month
-        """)
+        """,
+        )
         save(acled_monthly, "war_context_acled.json")
 
         wconn.close()

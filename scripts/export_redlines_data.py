@@ -192,6 +192,7 @@ def export_all():
     for dim in RLS_DIMS:
         val = _CIVI_VAL if dim == "theme" else dim
         tp_join = _CIVI_JOIN if dim == "theme" else ""
+        null_ref = f"ra.{dim}" if dim == "theme" else dim
         rows = q(conn, f"""
             SELECT {val} AS value, COUNT(*) AS count,
                    d.source
@@ -199,7 +200,7 @@ def export_all():
             {tp_join}
             JOIN document_chunk dc ON ra.chunk_id = dc.id
             JOIN document d ON dc.document_id = d.id
-            WHERE ra.is_relevant AND {dim} IS NOT NULL
+            WHERE ra.is_relevant AND {null_ref} IS NOT NULL
             GROUP BY {val}, d.source
             ORDER BY count DESC
         """)
@@ -211,11 +212,12 @@ def export_all():
     for dim in RLS_DIMS:
         val = _CIVI_VAL if dim == "theme" else dim
         tp_join = _CIVI_JOIN if dim == "theme" else ""
+        null_ref = f"ra.{dim}" if dim == "theme" else dim
         rows = q(conn, f"""
             SELECT {val} AS value, COUNT(*) AS count
             FROM rls_annotation ra
             {tp_join}
-            WHERE ra.is_relevant AND {dim} IS NOT NULL
+            WHERE ra.is_relevant AND {null_ref} IS NOT NULL
             GROUP BY {val}
             ORDER BY count DESC
         """)
@@ -291,14 +293,17 @@ def export_all():
     ]
     cross_data = {}
     for dim1, dim2 in cross_tabs:
-        d1 = _CIVI_VAL if dim1 == "theme" else dim1
-        d2 = _CIVI_VAL if dim2 == "theme" else dim2
-        tp_join = _CIVI_JOIN if "theme" in (dim1, dim2) else ""
+        has_theme = "theme" in (dim1, dim2)
+        tp_join = _CIVI_JOIN if has_theme else ""
+        d1 = _CIVI_VAL if dim1 == "theme" else (f"ra.{dim1}" if has_theme else dim1)
+        d2 = _CIVI_VAL if dim2 == "theme" else (f"ra.{dim2}" if has_theme else dim2)
+        nr1 = f"ra.{dim1}" if has_theme else dim1
+        nr2 = f"ra.{dim2}" if has_theme else dim2
         rows = q(conn, f"""
             SELECT {d1} AS dim1, {d2} AS dim2, COUNT(*) AS count
             FROM rls_annotation ra
             {tp_join}
-            WHERE ra.is_relevant AND {dim1} IS NOT NULL AND {dim2} IS NOT NULL
+            WHERE ra.is_relevant AND {nr1} IS NOT NULL AND {nr2} IS NOT NULL
             GROUP BY {d1}, {d2}
             ORDER BY count DESC
         """)
@@ -311,6 +316,7 @@ def export_all():
     for dim in ["theme", "audience", "nature_of_threat", "level_of_escalation"]:
         val = _CIVI_VAL if dim == "theme" else dim
         tp_join = _CIVI_JOIN if dim == "theme" else ""
+        null_ref = f"ra.{dim}" if dim == "theme" else dim
         rows = q(conn, f"""
             SELECT TO_CHAR(DATE_TRUNC('month', d.date), 'YYYY-MM') AS month,
                    {val} AS value, COUNT(*) AS count
@@ -318,7 +324,7 @@ def export_all():
             {tp_join}
             JOIN document_chunk dc ON ra.chunk_id = dc.id
             JOIN document d ON dc.document_id = d.id
-            WHERE ra.is_relevant AND d.date IS NOT NULL AND {dim} IS NOT NULL
+            WHERE ra.is_relevant AND d.date IS NOT NULL AND {null_ref} IS NOT NULL
             GROUP BY DATE_TRUNC('month', d.date), {val}
             ORDER BY month
         """)

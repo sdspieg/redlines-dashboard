@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import Plot from 'react-plotly.js';
 import { load } from '../data';
 import ChartInfo from './ChartInfo';
@@ -11,9 +11,52 @@ const PLOT_BG = 'transparent';
 const FONT = { color: '#e0e0e0' };
 const GRID = { color: 'rgba(255,255,255,0.08)' };
 
-// Built dynamically from metadata; these are fallbacks until metadata loads
-function buildOpts(vars: string[], labels: Record<string, string>) {
-  return vars.map(v => ({ value: v, label: labels[v] ?? v }));
+// ── Variable categorization ──────────────────────────────────────────────────
+
+function categorizeVar(v: string): string {
+  if (/^rrls_tgt_/.test(v)) return 'RRLS by Target';
+  if (/^rrls_/.test(v)) return 'RRLS (Core)';
+  if (/^nts_tgt_/.test(v)) return 'NTS by Target';
+  if (/^nts_/.test(v)) return 'NTS (Core)';
+  if (v === 'crls_count') return 'CRLS';
+  if (/^acled_rus_/.test(v)) return 'ACLED (Russian Actor)';
+  if (/^acled_ukr_/.test(v)) return 'ACLED (Ukrainian Actor)';
+  if (/^acled_/.test(v)) return 'ACLED (Overall)';
+  if (/^personnel_|^tank_|^apc_|^artillery_|^drone_/.test(v)) return 'Equipment Losses';
+  if (/^missiles_/.test(v)) return 'Aerial Assaults';
+  if (/^aid_(total|military)_/.test(v)) return 'Aid (Aggregate)';
+  if (/^aid_/.test(v)) return 'Aid by Donor';
+  if (v === 'new_sanctions_entities') return 'Sanctions';
+  if (/^gdelt_russia_to_.*_events$/.test(v)) return 'GDELT Threats RUS\u2192X';
+  if (/^gdelt_(?!russia_).*_to_russia_events$/.test(v)) return 'GDELT Threats X\u2192RUS';
+  if (/^gdelt_russia_to_/.test(v)) return 'GDELT Tone RUS\u2192X';
+  if (/^gdelt_(?!russia_).*_to_russia_/.test(v)) return 'GDELT Tone X\u2192RUS';
+  if (/^gdelt_/.test(v)) return 'GDELT Media (Core)';
+  return 'Other';
+}
+
+/** Group variables into { groupLabel: [{ value, label }] } preserving order */
+function groupVars(vars: string[], labels: Record<string, string>) {
+  const groups: Record<string, { value: string; label: string }[]> = {};
+  for (const v of vars) {
+    const cat = categorizeVar(v);
+    if (!groups[cat]) groups[cat] = [];
+    groups[cat].push({ value: v, label: labels[v] ?? v });
+  }
+  return groups;
+}
+
+/** Render <optgroup> elements */
+function GroupedOptions({ groups }: { groups: Record<string, { value: string; label: string }[]> }) {
+  return (
+    <>
+      {Object.entries(groups).map(([cat, opts]) => (
+        <optgroup key={cat} label={cat}>
+          {opts.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+        </optgroup>
+      ))}
+    </>
+  );
 }
 
 export default function Analytics() {
@@ -36,6 +79,9 @@ export default function Analytics() {
   const [esSpikeType, setEsSpikeType] = useState(0);
   const [esResponse, setEsResponse] = useState('');
   const [grangerLag, setGrangerLag] = useState('4');
+  // Granger heatmap group filters
+  const [grangerCauseGroup, setGrangerCauseGroup] = useState('__all__');
+  const [grangerEffectGroup, setGrangerEffectGroup] = useState('__all__');
 
   useEffect(() => {
     load<Record<string, unknown>[]>('analytics_timeseries.json').then(setTs);
@@ -62,14 +108,30 @@ export default function Analytics() {
     }
   }, [eventStudy, esResponse]);
 
+  // Build grouped dropdown options
+  const rhetGroups = useMemo(
+    () => meta ? groupVars(meta.rhetoric_vars, meta.variables) : {},
+    [meta],
+  );
+  const actGroups = useMemo(
+    () => meta ? groupVars(meta.action_vars.concat(meta.media_vars), meta.variables) : {},
+    [meta],
+  );
+
+  // Flatten for label lookups
+  const allOpts = useMemo(() => {
+    if (!meta) return {};
+    const m: Record<string, string> = {};
+    for (const v of [...meta.rhetoric_vars, ...meta.action_vars, ...meta.media_vars]) {
+      m[v] = meta.variables[v] ?? v;
+    }
+    return m;
+  }, [meta]);
+
   if (!ts || !meta) return <div className="loading">Loading analytics data...</div>;
 
-  // Build dropdowns dynamically from metadata (includes actor-level vars)
-  const RHETORIC_OPTS = buildOpts(meta.rhetoric_vars, meta.variables);
-  const ACTION_OPTS = buildOpts(meta.action_vars.concat(meta.media_vars), meta.variables);
-
-  const rhetLabel = RHETORIC_OPTS.find(o => o.value === rhetVar)?.label ?? rhetVar;
-  const actLabel = ACTION_OPTS.find(o => o.value === actVar)?.label ?? actVar;
+  const rhetLabel = allOpts[rhetVar] ?? rhetVar;
+  const actLabel = allOpts[actVar] ?? actVar;
 
   // ── Section 1: Time Series ──────────────────────────────────────────────
   const weeks = ts.map(r => r.week as string);
@@ -82,34 +144,54 @@ export default function Analytics() {
   );
 
   // ── Section 3: Granger heatmap ──────────────────────────────────────────
-  const grangerForDirection = granger?.filter(g => {
-    if (direction === 'a2r') {
-      return meta.action_vars.concat(meta.media_vars).includes(g.cause) &&
-             meta.rhetoric_vars.includes(g.effect);
-    }
-    return meta.rhetoric_vars.includes(g.cause) &&
-           meta.action_vars.concat(meta.media_vars).includes(g.effect);
-  });
+  // Determine cause/effect variable pools based on direction
+  const causePool = direction === 'a2r'
+    ? meta.action_vars.concat(meta.media_vars)
+    : meta.rhetoric_vars;
+  const effectPool = direction === 'a2r'
+    ? meta.rhetoric_vars
+    : meta.action_vars.concat(meta.media_vars);
 
-  const gCauses = [...new Set(grangerForDirection?.map(g => g.cause) ?? [])];
-  const gEffects = [...new Set(grangerForDirection?.map(g => g.effect) ?? [])];
+  // Get available groups for cause and effect pools
+  const causeGroupSet = [...new Set(causePool.map(categorizeVar))];
+  const effectGroupSet = [...new Set(effectPool.map(categorizeVar))];
+
+  // Apply group filter
+  const filteredCauses = grangerCauseGroup === '__all__'
+    ? causePool
+    : causePool.filter(v => categorizeVar(v) === grangerCauseGroup);
+  const filteredEffects = grangerEffectGroup === '__all__'
+    ? effectPool
+    : effectPool.filter(v => categorizeVar(v) === grangerEffectGroup);
+
+  // Cap to avoid unreadable heatmaps: if both are __all__, show core only
+  const maxHeatmapVars = 25;
+  const showAllCauses = filteredCauses.length <= maxHeatmapVars;
+  const showAllEffects = filteredEffects.length <= maxHeatmapVars;
+  const heatmapTooLarge = !showAllCauses || !showAllEffects;
+
+  const gCauses = showAllCauses ? filteredCauses : filteredCauses.slice(0, maxHeatmapVars);
+  const gEffects = showAllEffects ? filteredEffects : filteredEffects.slice(0, maxHeatmapVars);
+
   const gMatrix: (number | null)[][] = [];
   const gAnnotations: { text: string; x: number; y: number }[] = [];
 
-  for (let j = 0; j < gEffects.length; j++) {
-    const row: (number | null)[] = [];
-    for (let i = 0; i < gCauses.length; i++) {
-      const entry = grangerForDirection?.find(
-        g => g.cause === gCauses[i] && g.effect === gEffects[j]
-      );
-      const p = entry?.lags[grangerLag]?.f_pvalue ?? null;
-      row.push(p !== null ? -Math.log10(Math.max(p, 1e-20)) : null);
-      if (p !== null) {
-        const stars = p < 0.001 ? '***' : p < 0.01 ? '**' : p < 0.05 ? '*' : '';
-        gAnnotations.push({ text: stars, x: i, y: j });
+  if (granger) {
+    for (let j = 0; j < gEffects.length; j++) {
+      const row: (number | null)[] = [];
+      for (let i = 0; i < gCauses.length; i++) {
+        const entry = granger.find(
+          g => g.cause === gCauses[i] && g.effect === gEffects[j]
+        );
+        const p = entry?.lags[grangerLag]?.f_pvalue ?? null;
+        row.push(p !== null ? -Math.log10(Math.max(p, 1e-20)) : null);
+        if (p !== null) {
+          const stars = p < 0.001 ? '***' : p < 0.01 ? '**' : p < 0.05 ? '*' : '';
+          gAnnotations.push({ text: stars, x: i, y: j });
+        }
       }
+      gMatrix.push(row);
     }
-    gMatrix.push(row);
   }
 
   // ── Section 4: VAR IRFs ─────────────────────────────────────────────────
@@ -133,14 +215,14 @@ export default function Analytics() {
           <label style={{ fontSize: '0.85rem', color: '#aaa' }}>Rhetoric:</label>
           <select value={rhetVar} onChange={e => setRhetVar(e.target.value)}
             style={selectStyle}>
-            {RHETORIC_OPTS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+            <GroupedOptions groups={rhetGroups} />
           </select>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
           <label style={{ fontSize: '0.85rem', color: '#aaa' }}>Action/Media:</label>
           <select value={actVar} onChange={e => setActVar(e.target.value)}
             style={selectStyle}>
-            {ACTION_OPTS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+            <GroupedOptions groups={actGroups} />
           </select>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -231,7 +313,7 @@ export default function Analytics() {
               config={{ displayModeBar: false, responsive: true }}
               style={{ width: '100%' }}
             />
-          ) : <p style={{ color: '#888', padding: '2rem' }}>No data for this pair.</p>}
+          ) : <p style={{ color: '#888', padding: '2rem' }}>No cross-correlation data for this pair. Select a rhetoric + action/media combination.</p>}
         </div>
       </div>
 
@@ -239,22 +321,37 @@ export default function Analytics() {
       <div className="chart-row">
         <div className="chart-box" style={{ flex: 1 }}>
           <div className="chart-title-bar">
-            <h4>Granger Causality Heatmap ({direction === 'a2r' ? 'Action → Rhetoric' : 'Rhetoric → Action'})</h4>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <h4>Granger Causality ({direction === 'a2r' ? 'Action → Rhetoric' : 'Rhetoric → Action'})</h4>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
               <label style={{ fontSize: '0.8rem', color: '#aaa' }}>Lag:</label>
               <select value={grangerLag} onChange={e => setGrangerLag(e.target.value)} style={selectStyle}>
                 {[1,2,3,4,5,6,7,8].map(l => <option key={l} value={String(l)}>{l}</option>)}
               </select>
+              <label style={{ fontSize: '0.8rem', color: '#aaa' }}>Cause:</label>
+              <select value={grangerCauseGroup} onChange={e => setGrangerCauseGroup(e.target.value)} style={selectStyle}>
+                <option value="__all__">All groups</option>
+                {causeGroupSet.map(g => <option key={g} value={g}>{g}</option>)}
+              </select>
+              <label style={{ fontSize: '0.8rem', color: '#aaa' }}>Effect:</label>
+              <select value={grangerEffectGroup} onChange={e => setGrangerEffectGroup(e.target.value)} style={selectStyle}>
+                <option value="__all__">All groups</option>
+                {effectGroupSet.map(g => <option key={g} value={g}>{g}</option>)}
+              </select>
               <ChartInfo title="Granger Causality Heatmap"
-                description="Heatmap of Granger causality p-values. Color intensity represents -log10(p): brighter = more significant. Stars: * p<0.05, ** p<0.01, *** p<0.001. Tests whether past values of the 'cause' variable help predict the 'effect' variable beyond its own past." />
+                description="Heatmap of Granger causality p-values. Color intensity represents -log10(p): brighter = more significant. Stars: * p<0.05, ** p<0.01, *** p<0.001. Use the 'Cause' and 'Effect' group filters to focus on specific variable categories. Tests whether past values of the cause variable help predict the effect variable beyond its own past." />
             </div>
           </div>
-          {gCauses.length > 0 && gEffects.length > 0 ? (
+          {heatmapTooLarge && grangerCauseGroup === '__all__' && grangerEffectGroup === '__all__' ? (
+            <p style={{ color: '#ffb74d', padding: '1.5rem', fontSize: '0.9rem' }}>
+              Too many variables for the heatmap ({filteredCauses.length} causes × {filteredEffects.length} effects).
+              Use the <strong>Cause</strong> and <strong>Effect</strong> group filters above to select a subset.
+            </p>
+          ) : gCauses.length > 0 && gEffects.length > 0 ? (
             <Plot
               data={[{
                 z: gMatrix,
-                x: gCauses.map(c => meta.variables[c] ?? c),
-                y: gEffects.map(e => meta.variables[e] ?? e),
+                x: gCauses.map(c => allOpts[c] ?? c),
+                y: gEffects.map(e => allOpts[e] ?? e),
                 type: 'heatmap',
                 colorscale: [
                   [0, '#1a1a2e'], [0.3, '#16213e'], [0.5, '#0f3460'],
@@ -264,7 +361,8 @@ export default function Analytics() {
               }]}
               layout={{
                 paper_bgcolor: PLOT_BG, plot_bgcolor: PLOT_BG, font: FONT,
-                margin: { t: 20, b: 100, l: 140, r: 80 }, height: 350,
+                margin: { t: 20, b: 120, l: 160, r: 80 },
+                height: Math.max(300, gEffects.length * 28 + 150),
                 xaxis: { tickangle: -45 },
                 annotations: gAnnotations.map(a => ({
                   x: a.x, y: a.y, text: a.text,
@@ -274,7 +372,7 @@ export default function Analytics() {
               config={{ displayModeBar: false, responsive: true }}
               style={{ width: '100%' }}
             />
-          ) : <p style={{ color: '#888', padding: '2rem' }}>No Granger results available.</p>}
+          ) : <p style={{ color: '#888', padding: '2rem' }}>No Granger results for this selection.</p>}
         </div>
       </div>
 
@@ -531,7 +629,7 @@ export default function Analytics() {
 
             <details>
               <summary style={{ cursor: 'pointer', color: '#4fc3f7' }}>
-                Stationarity Tests (ADF)
+                Stationarity Tests (ADF) — {Object.keys(meta.stationarity).length} variables
               </summary>
               <table style={{ width: '100%', marginTop: '0.5rem', borderCollapse: 'collapse', fontSize: '0.8rem' }}>
                 <thead>
@@ -567,7 +665,7 @@ export default function Analytics() {
             {granger && (
               <details style={{ marginTop: '0.5rem' }}>
                 <summary style={{ cursor: 'pointer', color: '#4fc3f7' }}>
-                  Significant Granger Pairs (p {'<'} 0.05 at best lag)
+                  Significant Granger Pairs (p {'<'} 0.05 at best lag) — {granger.filter(g => g.best_pvalue < 0.05).length} of {granger.length}
                 </summary>
                 <table style={{ width: '100%', marginTop: '0.5rem', borderCollapse: 'collapse', fontSize: '0.8rem' }}>
                   <thead>
@@ -582,6 +680,7 @@ export default function Analytics() {
                     {granger
                       .filter(g => g.best_pvalue < 0.05)
                       .sort((a, b) => a.best_pvalue - b.best_pvalue)
+                      .slice(0, 100)
                       .map((g, i) => (
                         <tr key={i} style={{ borderBottom: '1px solid #222' }}>
                           <td style={{ padding: '3px 8px' }}>{g.cause_label}</td>
@@ -597,6 +696,11 @@ export default function Analytics() {
                       ))}
                   </tbody>
                 </table>
+                {granger.filter(g => g.best_pvalue < 0.05).length > 100 && (
+                  <p style={{ color: '#888', fontSize: '0.8rem', marginTop: '0.5rem' }}>
+                    Showing top 100 of {granger.filter(g => g.best_pvalue < 0.05).length} significant pairs.
+                  </p>
+                )}
               </details>
             )}
           </div>
@@ -609,4 +713,5 @@ export default function Analytics() {
 const selectStyle: React.CSSProperties = {
   background: '#1a1a2e', color: '#e0e0e0', border: '1px solid #333',
   borderRadius: '4px', padding: '4px 8px', fontSize: '0.8rem',
+  maxWidth: '260px',
 };

@@ -46,8 +46,15 @@ ACTION = [
     "missiles_launched", "missiles_destroyed",
     "aid_total_eur", "aid_military_eur",
     "new_sanctions_entities",
+    "acled_rus_events", "acled_rus_fatalities", "acled_rus_shelling",
+    "acled_ukr_events", "acled_ukr_fatalities", "acled_ukr_shelling",
 ]
-MEDIA = ["gdelt_tone", "gdelt_nuclear_quotes", "gdelt_escalation_quotes"]
+MEDIA = [
+    "gdelt_tone", "gdelt_nuclear_quotes", "gdelt_escalation_quotes",
+    "gdelt_redline_quotes", "gdelt_threat_quotes",
+    "gdelt_ultimatum_quotes", "gdelt_deter_quotes",
+    "gdelt_media_volume", "gdelt_media_volume_russia", "gdelt_russia_share",
+]
 
 VAR_LABELS = {
     "rrls_count": "RRLS Count",
@@ -78,6 +85,20 @@ VAR_LABELS = {
     "gdelt_tone": "GDELT Tone",
     "gdelt_nuclear_quotes": "GDELT Nuclear Quotes",
     "gdelt_escalation_quotes": "GDELT Escalation Quotes",
+    "gdelt_redline_quotes": "GDELT Red Line Quotes",
+    "gdelt_threat_quotes": "GDELT Threat Quotes",
+    "gdelt_ultimatum_quotes": "GDELT Ultimatum Quotes",
+    "gdelt_deter_quotes": "GDELT Deterrence Quotes",
+    "gdelt_media_volume": "GDELT Media Volume",
+    "gdelt_media_volume_russia": "GDELT Media Volume (Russia)",
+    "gdelt_russia_share": "GDELT Russia Share",
+    # ACLED actor-level
+    "acled_rus_events": "ACLED Russian Mil Events",
+    "acled_rus_fatalities": "ACLED Russian Mil Fatalities",
+    "acled_rus_shelling": "ACLED Russian Shelling",
+    "acled_ukr_events": "ACLED Ukrainian Mil Events",
+    "acled_ukr_fatalities": "ACLED Ukrainian Mil Fatalities",
+    "acled_ukr_shelling": "ACLED Ukrainian Shelling",
 }
 
 # Priority pairs for Local Projections — expanded
@@ -111,6 +132,22 @@ LP_PAIRS = [
     ("missiles_launched", "rrls_intensity_mean"),
     ("personnel_delta", "nts_tone_mean"),
     ("missiles_destroyed", "rrls_count"),
+    # ACLED actor-level
+    ("acled_rus_events", "rrls_count"),
+    ("acled_rus_shelling", "nts_count"),
+    ("acled_ukr_events", "rrls_count"),
+    ("acled_ukr_shelling", "rrls_count"),
+    ("rrls_count", "acled_rus_events"),
+    ("nts_count", "acled_ukr_events"),
+    # GDELT bidirectional (will only compute if columns exist from backfill)
+    ("gdelt_russia_to_us_events", "rrls_count"),
+    ("gdelt_russia_to_ukraine_events", "nts_count"),
+    ("rrls_count", "gdelt_russia_to_us_events"),
+    ("nts_count", "gdelt_russia_to_ukraine_events"),
+    # GDELT extra media
+    ("gdelt_redline_quotes", "rrls_count"),
+    ("gdelt_threat_quotes", "nts_count"),
+    ("gdelt_deter_quotes", "rrls_count"),
 ]
 
 
@@ -208,6 +245,62 @@ def _classify_donors(df: pd.DataFrame) -> pd.DataFrame:
     pivoted = grouped.pivot(index="week", columns="actor", values="value").fillna(0)
     pivoted.columns = [f"aid_{c}_eur" for c in pivoted.columns]
     return pivoted.reset_index()
+
+
+# GDELT country code → actor group mapping
+_GDELT_COUNTRY_RULES = {
+    "USA": "us", "UKR": "ukraine", "GBR": "uk", "DEU": "germany",
+    "FRA": "france", "POL": "poland", "JPN": "japan", "CAN": "canada",
+    "NLD": "netherlands", "SWE": "sweden", "NOR": "norway",
+    "EUR": "eu", "NATO": "nato", "WST": "west",
+    "CHN": "china", "RUS": "russia",
+}
+
+
+def _pivot_gdelt_bidir(df: pd.DataFrame) -> pd.DataFrame:
+    """Pivot GDELT bidirectional events into weekly columns per direction."""
+    if df.empty:
+        return pd.DataFrame(columns=["week"])
+
+    # Map country codes to groups
+    df["a1"] = df["actor1"].map(_GDELT_COUNTRY_RULES).fillna("other")
+    df["a2"] = df["actor2"].map(_GDELT_COUNTRY_RULES).fillna("other")
+
+    # Create direction label: "rus_to_us", "us_to_rus", etc.
+    df["direction"] = df["a1"] + "_to_" + df["a2"]
+
+    # Only keep directions involving Russia
+    df = df[
+        (df["a1"] == "russia") | (df["a2"] == "russia")
+    ].copy()
+    # Skip russia_to_russia
+    df = df[df["a1"] != df["a2"]]
+
+    if df.empty:
+        return pd.DataFrame(columns=["week"])
+
+    # Aggregate by week + direction
+    grouped = df.groupby(["week", "direction"]).agg(
+        events=("events", "sum"),
+        goldstein=("goldstein", "mean"),
+        tone=("tone", "mean"),
+        mentions=("mentions", "sum"),
+    ).reset_index()
+
+    # Pivot: one column per direction × metric
+    result = pd.DataFrame({"week": df["week"].unique()}).sort_values("week")
+    for direction in grouped["direction"].unique():
+        sub = grouped[grouped["direction"] == direction][
+            ["week", "events", "goldstein", "tone"]
+        ].copy()
+        sub = sub.rename(columns={
+            "events": f"gdelt_{direction}_events",
+            "goldstein": f"gdelt_{direction}_goldstein",
+            "tone": f"gdelt_{direction}_tone",
+        })
+        result = result.merge(sub, on="week", how="left")
+
+    return result
 
 
 # ── 1. Build weekly time series ──────────────────────────────────────────────
@@ -346,6 +439,45 @@ def build_weekly_panel():
     if not df_acled.empty:
         df_acled["week"] = pd.to_datetime(df_acled["week"])
 
+    print("  Querying ACLED by actor (RUS vs UKR military)...")
+    acled_actor_rows = q(war, """
+        SELECT DATE_TRUNC('week', event_date)::date AS week,
+               CASE WHEN actor1 LIKE 'Military Forces of Russia%%'
+                    THEN 'rus' ELSE 'ukr' END AS side,
+               COUNT(*) AS events,
+               COALESCE(SUM(fatalities), 0) AS fatalities,
+               COUNT(*) FILTER (WHERE sub_event_type = 'Shelling/artillery/missile attack') AS shelling
+        FROM conflict_events.acled_events
+        WHERE event_date >= '2022-02-21'
+          AND (actor1 LIKE 'Military Forces of Russia%%'
+               OR actor1 LIKE 'Military Forces of Ukraine%%')
+        GROUP BY DATE_TRUNC('week', event_date),
+                 CASE WHEN actor1 LIKE 'Military Forces of Russia%%'
+                      THEN 'rus' ELSE 'ukr' END
+        ORDER BY week
+    """)
+    df_acled_actor = pd.DataFrame(acled_actor_rows)
+    if not df_acled_actor.empty:
+        df_acled_actor["week"] = pd.to_datetime(df_acled_actor["week"])
+        # Pivot: one column per side × metric
+        pivoted_parts = []
+        for side in ["rus", "ukr"]:
+            sub = df_acled_actor[df_acled_actor["side"] == side][
+                ["week", "events", "fatalities", "shelling"]
+            ].copy()
+            sub = sub.rename(columns={
+                "events": f"acled_{side}_events",
+                "fatalities": f"acled_{side}_fatalities",
+                "shelling": f"acled_{side}_shelling",
+            })
+            pivoted_parts.append(sub)
+        if len(pivoted_parts) == 2:
+            df_acled_actor = pivoted_parts[0].merge(pivoted_parts[1], on="week", how="outer")
+        elif len(pivoted_parts) == 1:
+            df_acled_actor = pivoted_parts[0]
+    else:
+        df_acled_actor = pd.DataFrame(columns=["week"])
+
     print("  Querying personnel weekly...")
     pers_rows = q(war, """
         WITH daily AS (
@@ -443,12 +575,19 @@ def build_weekly_panel():
     """)
     df_aid_donor = _classify_donors(pd.DataFrame(aid_donor_rows))
 
-    print("  Querying GDELT weekly...")
+    print("  Querying GDELT weekly VARX (all columns)...")
     gdelt_rows = q(war, """
         SELECT DATE_TRUNC('week', week)::date AS gdelt_week,
                AVG(media_tone_mean) AS gdelt_tone,
                SUM(nuclear_quote_count) AS gdelt_nuclear_quotes,
-               SUM(escalation_quote_count) AS gdelt_escalation_quotes
+               SUM(escalation_quote_count) AS gdelt_escalation_quotes,
+               SUM(redline_quote_count) AS gdelt_redline_quotes,
+               SUM(threat_quote_count) AS gdelt_threat_quotes,
+               SUM(ultimatum_quote_count) AS gdelt_ultimatum_quotes,
+               SUM(deter_quote_count) AS gdelt_deter_quotes,
+               SUM(media_volume_all) AS gdelt_media_volume,
+               SUM(media_volume_russia) AS gdelt_media_volume_russia,
+               AVG(russia_share) AS gdelt_russia_share
         FROM global_events.gdelt_weekly_varx
         WHERE week >= '2022-02-21'
         GROUP BY DATE_TRUNC('week', week)
@@ -459,14 +598,43 @@ def build_weekly_panel():
         df_gdelt = df_gdelt.rename(columns={"gdelt_week": "week"})
         df_gdelt["week"] = pd.to_datetime(df_gdelt["week"])
 
+    # ── GDELT bidirectional events (RUS→target and target→RUS) ──
+    print("  Querying GDELT bidirectional events...")
+    gdelt_bidir_rows = q(war, """
+        SELECT DATE_TRUNC('week', to_date(sqldate::text, 'YYYYMMDD'))::date AS week,
+               actor1countrycode AS actor1,
+               actor2countrycode AS actor2,
+               COUNT(*) AS events,
+               AVG(goldsteinscale) AS goldstein,
+               AVG(avgtone) AS tone,
+               SUM(nummentions) AS mentions
+        FROM global_events.gdelt_events
+        WHERE sqldate >= 20220221
+          AND actor2countrycode IS NOT NULL
+          AND actor2countrycode != ''
+        GROUP BY DATE_TRUNC('week', to_date(sqldate::text, 'YYYYMMDD')),
+                 actor1countrycode, actor2countrycode
+        ORDER BY week
+    """)
+    df_gdelt_bidir = pd.DataFrame(gdelt_bidir_rows)
+    if not df_gdelt_bidir.empty:
+        df_gdelt_bidir["week"] = pd.to_datetime(df_gdelt_bidir["week"])
+    else:
+        df_gdelt_bidir = pd.DataFrame(columns=["week"])
+
     war.close()
+
+    # ── Pivot GDELT bidirectional ──
+    print("  Pivoting GDELT bidirectional events...")
+    df_gdelt_bidir_pivot = _pivot_gdelt_bidir(df_gdelt_bidir)
 
     # ── Assemble panel ──
     print("  Assembling weekly panel...")
     # Determine end date from data
     all_dates = []
     for df in [df_rrls, df_nts, df_crls, df_acled, df_pers, df_equip,
-               df_missiles, df_aid, df_sanctions, df_gdelt]:
+               df_missiles, df_aid, df_sanctions, df_gdelt, df_acled_actor,
+               df_gdelt_bidir_pivot]:
         if not df.empty and "week" in df.columns:
             all_dates.append(df["week"].max())
 
@@ -477,9 +645,10 @@ def build_weekly_panel():
     # Left-join all
     dfs = {
         "rrls": df_rrls, "nts": df_nts, "crls": df_crls,
-        "acled": df_acled, "pers": df_pers, "equip": df_equip,
+        "acled": df_acled, "acled_actor": df_acled_actor,
+        "pers": df_pers, "equip": df_equip,
         "missiles": df_missiles, "aid": df_aid, "sanctions": df_sanctions,
-        "gdelt": df_gdelt,
+        "gdelt": df_gdelt, "gdelt_bidir": df_gdelt_bidir_pivot,
         "rrls_tgt": df_rrls_tgt, "nts_tgt": df_nts_tgt,
         "aid_donor": df_aid_donor,
     }
@@ -491,15 +660,25 @@ def build_weekly_panel():
     count_cols = [
         "rrls_count", "nts_count", "crls_count",
         "acled_events", "acled_fatalities", "acled_battles", "acled_explosions",
+        "acled_rus_events", "acled_rus_fatalities", "acled_rus_shelling",
+        "acled_ukr_events", "acled_ukr_fatalities", "acled_ukr_shelling",
         "personnel_delta", "tank_delta", "apc_delta", "artillery_delta", "drone_delta",
         "missiles_launched", "missiles_destroyed",
         "new_sanctions_entities",
         "gdelt_nuclear_quotes", "gdelt_escalation_quotes",
+        "gdelt_redline_quotes", "gdelt_threat_quotes",
+        "gdelt_ultimatum_quotes", "gdelt_deter_quotes",
+        "gdelt_media_volume", "gdelt_media_volume_russia",
     ]
-    # Also fill all actor-level columns with 0
+    # Also fill all actor-level columns with 0 (RRLS/NTS targets, aid donors, GDELT bidir)
     actor_cols = [c for c in panel.columns
-                  if c.startswith(("rrls_tgt_", "nts_tgt_", "aid_")) and c != "aid_total_eur" and c != "aid_military_eur"]
-    count_cols += actor_cols
+                  if c.startswith(("rrls_tgt_", "nts_tgt_", "aid_", "gdelt_"))
+                  and c not in count_cols
+                  and c not in ["aid_total_eur", "aid_military_eur",
+                                "gdelt_tone", "gdelt_russia_share"]]
+    # GDELT bidir event counts → fill 0
+    gdelt_bidir_event_cols = [c for c in actor_cols if c.endswith("_events")]
+    count_cols += gdelt_bidir_event_cols + [c for c in actor_cols if c not in gdelt_bidir_event_cols and not c.endswith(("_goldstein", "_tone"))]
 
     for c in count_cols:
         if c in panel.columns:
@@ -508,9 +687,14 @@ def build_weekly_panel():
     intensity_cols = [
         "rrls_line_intensity_mean", "rrls_threat_intensity_mean", "rrls_intensity_mean",
         "nts_tone_mean", "nts_cond_mean", "nts_conseq_mean", "nts_spec_mean",
-        "nts_severity_mean", "gdelt_tone",
+        "nts_severity_mean", "gdelt_tone", "gdelt_russia_share",
         "aid_total_eur", "aid_military_eur",
     ]
+    # GDELT bidir goldstein/tone cols → forward-fill
+    gdelt_bidir_rate_cols = [c for c in panel.columns
+                             if c.startswith("gdelt_") and (c.endswith("_goldstein") or c.endswith("_tone"))
+                             and c not in intensity_cols and c != "gdelt_tone"]
+    intensity_cols += gdelt_bidir_rate_cols
     for c in intensity_cols:
         if c in panel.columns:
             panel[c] = pd.to_numeric(panel[c], errors="coerce")
@@ -537,6 +721,20 @@ def build_weekly_panel():
             VAR_LABELS[c] = f"Aid from {actor} (EUR)"
             if c not in ACTION:
                 ACTION.append(c)
+        elif c.startswith("gdelt_") and c not in VAR_LABELS and c not in MEDIA:
+            # GDELT bidirectional: gdelt_russia_to_us_events → "GDELT RUS→US Events"
+            parts = c.replace("gdelt_", "").rsplit("_", 1)
+            if len(parts) == 2:
+                direction, metric = parts
+                direction_label = direction.replace("russia_to_", "RUS→").replace("_to_russia", "→RUS").upper()
+                metric_label = metric.capitalize()
+                VAR_LABELS[c] = f"GDELT {direction_label} {metric_label}"
+                if metric in ("events", "mentions"):
+                    if c not in ACTION:
+                        ACTION.append(c)
+                elif metric in ("goldstein", "tone"):
+                    if c not in MEDIA:
+                        MEDIA.append(c)
 
     print(f"  Panel: {len(panel)} weeks × {len(panel.columns)} columns")
     print(f"  Actor vars: {len([c for c in panel.columns if 'tgt_' in c or (c.startswith('aid_') and c not in ['aid_total_eur', 'aid_military_eur'])])} columns")

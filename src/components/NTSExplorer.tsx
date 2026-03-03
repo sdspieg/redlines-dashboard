@@ -150,10 +150,8 @@ export default function NTSExplorer() {
               y: rows.map(r => ntsLabel(r.value)),
               orientation: 'h',
               marker: { color: rows.map((r, i) => getDimValueColor(NTS_COLORS, selectedDim, r.value, i)) },
-              text: rows.map(r => `\u2622 ${r.count}`),
-              textposition: 'auto',
-              insidetextanchor: 'middle',
-              textfont: { color: rows.map(r => r.count > 5 ? '#1a1a2e' : '#e0e0e0') },
+              text: rows.map(r => r.count.toString()),
+              textposition: 'outside',
             }]}
             layout={{
               paper_bgcolor: 'transparent', plot_bgcolor: 'transparent',
@@ -162,6 +160,19 @@ export default function NTSExplorer() {
               height: Math.max(300, rows.length * 30),
               yaxis: { autorange: 'reversed' },
               xaxis: { title: 'Count' },
+              annotations: rows.filter(r => r.count > 3).map(r => ({
+                x: r.count / 2,
+                y: ntsLabel(r.value),
+                text: '\u2622',
+                showarrow: false,
+                font: { size: 24, color: '#000000' },
+                bgcolor: '#fdd835',
+                bordercolor: '#000000',
+                borderwidth: 2,
+                borderpad: 3,
+                xref: 'x' as const,
+                yref: 'y' as const,
+              })),
             }}
             config={{ displayModeBar: false, responsive: true }}
             style={{ width: '100%' }}
@@ -184,10 +195,8 @@ export default function NTSExplorer() {
               y: rows.map(r => ntsLabel(r.value)),
               orientation: 'h',
               marker: { color: rows.map((r, i) => getDimValueColor(NTS_COLORS, selectedDim, r.value, i)) },
-              text: rows.map(r => totalCount > 0 ? `\u2622 ${((r.count / totalCount) * 100).toFixed(1)}%` : '\u2622 0%'),
-              textposition: 'auto',
-              insidetextanchor: 'middle',
-              textfont: { color: rows.map(r => (r.count / totalCount) > 0.05 ? '#1a1a2e' : '#e0e0e0') },
+              text: rows.map(r => totalCount > 0 ? ((r.count / totalCount) * 100).toFixed(1) + '%' : '0%'),
+              textposition: 'outside',
             }]}
             layout={{
               paper_bgcolor: 'transparent', plot_bgcolor: 'transparent',
@@ -196,6 +205,19 @@ export default function NTSExplorer() {
               height: Math.max(300, rows.length * 30),
               yaxis: { autorange: 'reversed' },
               xaxis: { title: '% of \u2622 NTS Statements', ticksuffix: '%' },
+              annotations: rows.filter(r => (r.count / totalCount) > 0.02).map(r => ({
+                x: ((r.count / totalCount) * 100) / 2,
+                y: ntsLabel(r.value),
+                text: '\u2622',
+                showarrow: false,
+                font: { size: 24, color: '#000000' },
+                bgcolor: '#fdd835',
+                bordercolor: '#000000',
+                borderwidth: 2,
+                borderpad: 3,
+                xref: 'x' as const,
+                yref: 'y' as const,
+              })),
             }}
             config={{ displayModeBar: false, responsive: true }}
             style={{ width: '100%' }}

@@ -186,16 +186,21 @@ def export_all():
         "geopolitical_area_of_concern", "immediacy",
         "unilateral_vs_multilateral", "rhetorical_device",
     ]
+    _CIVI_VAL = "CASE WHEN tp.civilizational_framing THEN 'Civilizational' ELSE ra.theme END"
+    _CIVI_JOIN = "LEFT JOIN rls_annotation_third_pass tp ON tp.chunk_id = ra.chunk_id"
     taxonomy = {}
     for dim in RLS_DIMS:
+        val = _CIVI_VAL if dim == "theme" else dim
+        tp_join = _CIVI_JOIN if dim == "theme" else ""
         rows = q(conn, f"""
-            SELECT {dim} AS value, COUNT(*) AS count,
+            SELECT {val} AS value, COUNT(*) AS count,
                    d.source
             FROM rls_annotation ra
+            {tp_join}
             JOIN document_chunk dc ON ra.chunk_id = dc.id
             JOIN document d ON dc.document_id = d.id
             WHERE ra.is_relevant AND {dim} IS NOT NULL
-            GROUP BY {dim}, d.source
+            GROUP BY {val}, d.source
             ORDER BY count DESC
         """)
         taxonomy[dim] = rows
@@ -204,11 +209,14 @@ def export_all():
     # Taxonomy totals (without source breakdown, for overview)
     tax_totals = {}
     for dim in RLS_DIMS:
+        val = _CIVI_VAL if dim == "theme" else dim
+        tp_join = _CIVI_JOIN if dim == "theme" else ""
         rows = q(conn, f"""
-            SELECT {dim} AS value, COUNT(*) AS count
+            SELECT {val} AS value, COUNT(*) AS count
             FROM rls_annotation ra
+            {tp_join}
             WHERE ra.is_relevant AND {dim} IS NOT NULL
-            GROUP BY {dim}
+            GROUP BY {val}
             ORDER BY count DESC
         """)
         tax_totals[dim] = rows
@@ -283,11 +291,15 @@ def export_all():
     ]
     cross_data = {}
     for dim1, dim2 in cross_tabs:
+        d1 = _CIVI_VAL if dim1 == "theme" else dim1
+        d2 = _CIVI_VAL if dim2 == "theme" else dim2
+        tp_join = _CIVI_JOIN if "theme" in (dim1, dim2) else ""
         rows = q(conn, f"""
-            SELECT {dim1} AS dim1, {dim2} AS dim2, COUNT(*) AS count
+            SELECT {d1} AS dim1, {d2} AS dim2, COUNT(*) AS count
             FROM rls_annotation ra
+            {tp_join}
             WHERE ra.is_relevant AND {dim1} IS NOT NULL AND {dim2} IS NOT NULL
-            GROUP BY {dim1}, {dim2}
+            GROUP BY {d1}, {d2}
             ORDER BY count DESC
         """)
         cross_data[f"{dim1}_x_{dim2}"] = rows
@@ -297,14 +309,17 @@ def export_all():
     print("[12] Taxonomy over time")
     tax_time = {}
     for dim in ["theme", "audience", "nature_of_threat", "level_of_escalation"]:
+        val = _CIVI_VAL if dim == "theme" else dim
+        tp_join = _CIVI_JOIN if dim == "theme" else ""
         rows = q(conn, f"""
             SELECT TO_CHAR(DATE_TRUNC('month', d.date), 'YYYY-MM') AS month,
-                   {dim} AS value, COUNT(*) AS count
+                   {val} AS value, COUNT(*) AS count
             FROM rls_annotation ra
+            {tp_join}
             JOIN document_chunk dc ON ra.chunk_id = dc.id
             JOIN document d ON dc.document_id = d.id
             WHERE ra.is_relevant AND d.date IS NOT NULL AND {dim} IS NOT NULL
-            GROUP BY DATE_TRUNC('month', d.date), {dim}
+            GROUP BY DATE_TRUNC('month', d.date), {val}
             ORDER BY month
         """)
         tax_time[dim] = rows
@@ -318,13 +333,15 @@ def export_all():
                ra.line_text_span, ra.threat_text_span,
                ra.line AS line_type, ra.threat AS threat_type,
                ra.line_intensity, ra.threat_intensity,
-               ra.theme, ra.audience, ra.nature_of_threat,
+               CASE WHEN tp.civilizational_framing THEN 'Civilizational' ELSE ra.theme END AS theme,
+               ra.audience, ra.nature_of_threat,
                ra.level_of_escalation, ra.geopolitical_area_of_concern,
                ra.immediacy, ra.durability, ra.reciprocity, ra.specificity,
                ra.temporal_context, ra.underlying_values_or_interests,
                ra.unilateral_vs_multilateral, ra.rhetorical_device,
                ra.overall_confidence
         FROM rls_annotation ra
+        LEFT JOIN rls_annotation_third_pass tp ON tp.chunk_id = ra.chunk_id
         JOIN document_chunk dc ON ra.chunk_id = dc.id
         JOIN document d ON dc.document_id = d.id
         WHERE ra.is_relevant

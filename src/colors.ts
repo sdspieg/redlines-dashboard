@@ -46,6 +46,7 @@ export const RRLS_COLORS: Record<string, Record<string, string>> = {
     'Public Health/Medical Research':'#bcbd22',
     'Infrastructure':               '#17becf',
     'Tech/Science':                 '#aec7e8',
+    'Civilizational':               '#ffbb78',
   },
   audience: {
     'Adversaries':          '#d62728',

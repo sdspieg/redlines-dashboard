@@ -449,7 +449,7 @@ export default function Overview() {
 
       <div className="info-box">
         <p>Date range: <strong>{stats.date_min}</strong> to <strong>{stats.date_max}</strong> | {chunks.length} unique sources across {stats.total_sources} institutions</p>
-        <p>{'Pipeline: 1st pass (GPT-4o screening) \u2192 2nd pass (GPT-5 mini taxonomy) \u2192 3rd pass (civilizational framing)'}</p>
+        <p>{'Pipeline: 1st pass (gpt-oss-120b screening) \u2192 2nd pass (gpt-5-mini taxonomy) \u2192 3rd pass (gpt-5-mini civilizational framing)'}</p>
       </div>
     </div>
   );

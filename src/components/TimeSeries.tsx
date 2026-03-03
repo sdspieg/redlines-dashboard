@@ -62,7 +62,7 @@ export default function TimeSeries() {
           <Plot
             data={[
               { type: 'scatter', mode: 'lines', name: 'RRLS', x: allMonths, y: allMonths.map(m => rrlsM[m] || 0), line: { color: RRLS_COLOR, width: 2 } },
-              { type: 'scatter', mode: 'lines', name: 'NTS', x: allMonths, y: allMonths.map(m => ntsM[m] || 0), line: { color: NTS_COLOR, width: 2 } },
+              { type: 'scatter', mode: 'lines', name: '\u2622 NTS', x: allMonths, y: allMonths.map(m => ntsM[m] || 0), line: { color: NTS_COLOR, width: 2 } },
               { type: 'scatter', mode: 'lines', name: 'CRLS', x: allMonths, y: allMonths.map(m => crlsM[m] || 0), line: { color: CRLS_COLOR, width: 2 } },
             ]}
             layout={{
@@ -91,7 +91,7 @@ export default function TimeSeries() {
           <Plot
             data={[
               { type: 'scatter', mode: 'lines', name: 'RRLS %', x: allMonths, y: rrlsRate, line: { color: RRLS_COLOR, width: 2 } },
-              { type: 'scatter', mode: 'lines', name: 'NTS %', x: allMonths, y: ntsRate, line: { color: NTS_COLOR, width: 2 } },
+              { type: 'scatter', mode: 'lines', name: '\u2622 NTS %', x: allMonths, y: ntsRate, line: { color: NTS_COLOR, width: 2 } },
               { type: 'scatter', mode: 'lines', name: 'CRLS %', x: allMonths, y: crlsRate, line: { color: CRLS_COLOR, width: 2 } },
             ]}
             layout={{
@@ -143,7 +143,7 @@ export default function TimeSeries() {
         <div className="chart-row">
           <div className="chart-box">
             <div className="chart-title-bar">
-              <h4>NTS vs. ACLED Conflict Events</h4>
+              <h4>{'\u2622'} NTS vs. ACLED Conflict Events</h4>
               <ChartInfo
                 title="NTS vs. ACLED Events"
                 description="Dual-axis chart comparing monthly NTS counts (bars, left axis) with ACLED conflict events (line, right axis). Shows whether nuclear threat rhetoric correlates with conflict intensity."
@@ -151,7 +151,7 @@ export default function TimeSeries() {
             </div>
             <Plot
               data={[
-                { type: 'bar', name: 'NTS', x: allMonths, y: allMonths.map(m => ntsM[m] || 0), marker: { color: NTS_COLOR, opacity: 0.7 }, yaxis: 'y' },
+                { type: 'bar', name: '\u2622 NTS', x: allMonths, y: allMonths.map(m => ntsM[m] || 0), marker: { color: NTS_COLOR, opacity: 0.7 }, yaxis: 'y' },
                 { type: 'scatter', mode: 'lines', name: 'ACLED Events', x: warAcled.map(r => r.month), y: warAcled.map(r => r.events ?? 0), line: { color: CRLS_COLOR, width: 2 }, yaxis: 'y2' },
               ]}
               layout={{
@@ -160,7 +160,7 @@ export default function TimeSeries() {
                 margin: { t: 10, b: 40, l: 60, r: 60 },
                 height: 350,
                 legend: { orientation: 'h', y: 1.1 },
-                yaxis: { title: 'NTS Count', side: 'left' },
+                yaxis: { title: '\u2622 NTS Count', side: 'left' },
                 yaxis2: { title: 'ACLED Events', side: 'right', overlaying: 'y' },
               }}
               config={{ displayModeBar: false, responsive: true }}

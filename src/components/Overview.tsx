@@ -25,7 +25,7 @@ export default function Overview() {
   const funnelLabels = ['Total Chunks', '1st Pass RLS', '2nd Pass RRLS', '3rd Pass', 'CRLS'];
   const funnelVals = [stats.total_chunks, stats.fpa_rls_relevant, stats.rls2_confirmed, stats.rls3_confirmed, stats.crls_count];
 
-  const ntsFunnel = ['Total Chunks', '1st Pass NTS', '2nd Pass NTS'];
+  const ntsFunnel = ['Total Chunks', '\u2622 1st Pass NTS', '\u2622 2nd Pass NTS'];
   const ntsVals = [stats.total_chunks, stats.fpa_nts_relevant, stats.nts2_confirmed];
 
   const top = rrls.slice(0, 15);
@@ -51,7 +51,7 @@ export default function Overview() {
         </div>
         <div className="stat-card" style={{ borderColor: '#fdd835' }}>
           <div className="stat-val">{stats.nts2_confirmed.toLocaleString()}</div>
-          <div className="stat-label">NTS ({((stats.nts2_confirmed / stats.total_chunks) * 100).toFixed(1)}% of chunks)</div>
+          <div className="stat-label">{'\u2622'} NTS ({((stats.nts2_confirmed / stats.total_chunks) * 100).toFixed(1)}% of chunks)</div>
         </div>
         <div className="stat-card" style={{ borderColor: '#d62728' }}>
           <div className="stat-val">{stats.crls_count.toLocaleString()}</div>
@@ -91,7 +91,7 @@ export default function Overview() {
         </div>
         <div className="chart-box">
           <div className="chart-title-bar">
-            <h4>NTS Pipeline</h4>
+            <h4>{'\u2622'} NTS Pipeline</h4>
             <ChartInfo
               title="NTS Pipeline Funnel"
               description="Funnel chart showing the nuclear threat statement annotation pipeline, from initial text chunks through first-pass screening to confirmed NTS statements. Percentages show retention at each stage."
@@ -132,7 +132,7 @@ export default function Overview() {
                 marker: { color: '#d32f2f' },
               },
               {
-                type: 'bar', name: 'NTS',
+                type: 'bar', name: '\u2622 NTS',
                 x: nts.slice(0, 15).map(r => r.source),
                 y: nts.slice(0, 15).map(r => r.confirmed ?? 0),
                 marker: { color: '#fdd835' },
@@ -171,7 +171,7 @@ export default function Overview() {
                 textposition: 'outside',
               },
               {
-                type: 'bar', name: 'NTS %',
+                type: 'bar', name: '\u2622 NTS %',
                 x: nts.slice(0, 15).map(r => r.source),
                 y: nts.slice(0, 15).map(r => { const tc = chunksBySource[r.source] || 0; return tc > 0 ? ((r.confirmed ?? 0) / tc) * 100 : 0; }),
                 marker: { color: '#fdd835' },
@@ -279,7 +279,7 @@ export default function Overview() {
             line: { color, width, shape: 'linear' as const },
             marker: { size: [6, 0.1, 6], color: markerColor },
             customdata: [src, src, src],
-            hovertemplate: `<b>${name}</b><br>RRLS: rank ${rRank}${rRank <= 20 ? ` (${rConf} confirmed)` : ' (not in top 20)'}<br>NTS: rank ${nRank}${nRank <= 20 ? ` (${nConf} confirmed)` : ' (not in top 20)'}<br>Rank change: ${diff === 0 ? 'same' : (nRank < rRank ? '\u25b2' : '\u25bc') + Math.abs(rRank - nRank)}<extra></extra>`,
+            hovertemplate: `<b>${name}</b><br>RRLS: rank ${rRank}${rRank <= 20 ? ` (${rConf} confirmed)` : ' (not in top 20)'}<br>\u2622 NTS: rank ${nRank}${nRank <= 20 ? ` (${nConf} confirmed)` : ' (not in top 20)'}<br>Rank change: ${diff === 0 ? 'same' : (nRank < rRank ? '\u25b2' : '\u25bc') + Math.abs(rRank - nRank)}<extra></extra>`,
             hoveron: 'points+fills' as const,
             showlegend: false,
           };
@@ -311,7 +311,7 @@ export default function Overview() {
           <div className="chart-row">
             <div className="chart-box">
               <div className="chart-title-bar">
-                <h4>RRLS vs NTS Rank Comparison (Slope Chart)</h4>
+                <h4>RRLS vs {'\u2622'} NTS Rank Comparison (Slope Chart)</h4>
                 <ChartInfo
                   title="RRLS vs NTS Rank Comparison"
                   description="Slope chart comparing how sources rank for RRLS (left) vs NTS (right). Click a source name or line to highlight it. Red lines = large rank change (8+), orange = moderate (4-7), grey = similar. Hover over lines for details."
@@ -327,7 +327,7 @@ export default function Overview() {
                   xaxis: {
                     range: [0, 1],
                     tickvals: [0.15, 0.85],
-                    ticktext: ['RRLS Rank', 'NTS Rank'],
+                    ticktext: ['RRLS Rank', '\u2622 NTS Rank'],
                     fixedrange: true,
                     showgrid: false,
                     zeroline: false,
@@ -390,7 +390,7 @@ export default function Overview() {
           <Plot
             data={[
               { type: 'bar', name: 'RRLS', x: comp.map(r => r.db), y: comp.map(r => r.rrls), marker: { color: '#d32f2f' } },
-              { type: 'bar', name: 'NTS', x: comp.map(r => r.db), y: comp.map(r => r.nts), marker: { color: '#fdd835' } },
+              { type: 'bar', name: '\u2622 NTS', x: comp.map(r => r.db), y: comp.map(r => r.nts), marker: { color: '#fdd835' } },
             ]}
             layout={{
               barmode: 'group',
@@ -424,7 +424,7 @@ export default function Overview() {
                 textposition: 'outside',
               },
               {
-                type: 'bar', name: 'NTS %',
+                type: 'bar', name: '\u2622 NTS %',
                 x: comp.map(r => r.db),
                 y: comp.map(r => r.total_chunks > 0 ? (r.nts / r.total_chunks) * 100 : 0),
                 marker: { color: '#fdd835' },

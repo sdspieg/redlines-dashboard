@@ -34,25 +34,37 @@ OUT.mkdir(parents=True, exist_ok=True)
 
 RHETORIC = [
     "rrls_count", "rrls_intensity_mean",
-    "nts_count", "nts_severity_mean", "crls_count",
+    "rrls_line_intensity_mean", "rrls_threat_intensity_mean",
+    "nts_count", "nts_severity_mean",
+    "nts_tone_mean", "nts_cond_mean", "nts_conseq_mean", "nts_spec_mean",
+    "crls_count",
 ]
 ACTION = [
-    "acled_events", "acled_fatalities", "personnel_delta",
-    "tank_delta", "drone_delta", "missiles_launched",
-    "aid_military_eur", "new_sanctions_entities",
+    "acled_events", "acled_fatalities", "acled_battles", "acled_explosions",
+    "personnel_delta",
+    "tank_delta", "apc_delta", "artillery_delta", "drone_delta",
+    "missiles_launched", "missiles_destroyed",
+    "aid_total_eur", "aid_military_eur",
+    "new_sanctions_entities",
 ]
 MEDIA = ["gdelt_tone", "gdelt_nuclear_quotes", "gdelt_escalation_quotes"]
 
 VAR_LABELS = {
     "rrls_count": "RRLS Count",
-    "rrls_intensity_mean": "RRLS Intensity",
+    "rrls_intensity_mean": "RRLS Intensity (combined)",
+    "rrls_line_intensity_mean": "RRLS Line Intensity",
+    "rrls_threat_intensity_mean": "RRLS Threat Intensity",
     "nts_count": "NTS Count",
-    "nts_severity_mean": "NTS Severity",
+    "nts_severity_mean": "NTS Severity (combined)",
+    "nts_tone_mean": "NTS Tone",
+    "nts_cond_mean": "NTS Conditionality",
+    "nts_conseq_mean": "NTS Consequences",
+    "nts_spec_mean": "NTS Specificity",
     "crls_count": "CRLS Count",
     "acled_events": "ACLED Events",
     "acled_fatalities": "ACLED Fatalities",
     "acled_battles": "ACLED Battles",
-    "acled_explosions": "ACLED Explosions",
+    "acled_explosions": "ACLED Explosions/Remote Violence",
     "personnel_delta": "Personnel Losses",
     "tank_delta": "Tank Losses",
     "apc_delta": "APC Losses",
@@ -68,7 +80,7 @@ VAR_LABELS = {
     "gdelt_escalation_quotes": "GDELT Escalation Quotes",
 }
 
-# Priority pairs for Local Projections
+# Priority pairs for Local Projections — expanded
 LP_PAIRS = [
     ("acled_fatalities", "rrls_count"),
     ("personnel_delta", "rrls_count"),
@@ -78,6 +90,27 @@ LP_PAIRS = [
     ("rrls_count", "acled_events"),
     ("new_sanctions_entities", "rrls_count"),
     ("nts_count", "acled_fatalities"),
+    # New pairs — equipment breakdowns
+    ("tank_delta", "rrls_count"),
+    ("drone_delta", "nts_count"),
+    ("artillery_delta", "rrls_count"),
+    ("apc_delta", "rrls_count"),
+    # New pairs — ACLED breakdowns
+    ("acled_battles", "rrls_count"),
+    ("acled_explosions", "nts_count"),
+    # New pairs — aid & sanctions
+    ("aid_total_eur", "rrls_count"),
+    ("rrls_count", "new_sanctions_entities"),
+    ("nts_count", "aid_military_eur"),
+    # New pairs — media
+    ("gdelt_escalation_quotes", "rrls_count"),
+    ("rrls_count", "gdelt_escalation_quotes"),
+    ("nts_count", "missiles_launched"),
+    # New pairs — severity dimensions
+    ("acled_fatalities", "nts_severity_mean"),
+    ("missiles_launched", "rrls_intensity_mean"),
+    ("personnel_delta", "nts_tone_mean"),
+    ("missiles_destroyed", "rrls_count"),
 ]
 
 

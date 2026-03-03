@@ -13,19 +13,31 @@ const GRID = { color: 'rgba(255,255,255,0.08)' };
 
 const RHETORIC_OPTS = [
   { value: 'rrls_count', label: 'RRLS Count' },
-  { value: 'rrls_intensity_mean', label: 'RRLS Intensity' },
+  { value: 'rrls_intensity_mean', label: 'RRLS Intensity (combined)' },
+  { value: 'rrls_line_intensity_mean', label: 'RRLS Line Intensity' },
+  { value: 'rrls_threat_intensity_mean', label: 'RRLS Threat Intensity' },
   { value: 'nts_count', label: 'NTS Count' },
-  { value: 'nts_severity_mean', label: 'NTS Severity' },
+  { value: 'nts_severity_mean', label: 'NTS Severity (combined)' },
+  { value: 'nts_tone_mean', label: 'NTS Tone' },
+  { value: 'nts_cond_mean', label: 'NTS Conditionality' },
+  { value: 'nts_conseq_mean', label: 'NTS Consequences' },
+  { value: 'nts_spec_mean', label: 'NTS Specificity' },
   { value: 'crls_count', label: 'CRLS Count' },
 ];
 
 const ACTION_OPTS = [
   { value: 'acled_events', label: 'ACLED Events' },
   { value: 'acled_fatalities', label: 'ACLED Fatalities' },
+  { value: 'acled_battles', label: 'ACLED Battles' },
+  { value: 'acled_explosions', label: 'ACLED Explosions/Remote Violence' },
   { value: 'personnel_delta', label: 'Personnel Losses' },
   { value: 'tank_delta', label: 'Tank Losses' },
+  { value: 'apc_delta', label: 'APC Losses' },
+  { value: 'artillery_delta', label: 'Artillery Losses' },
   { value: 'drone_delta', label: 'Drone Losses' },
   { value: 'missiles_launched', label: 'Missiles Launched' },
+  { value: 'missiles_destroyed', label: 'Missiles Destroyed' },
+  { value: 'aid_total_eur', label: 'Total Aid (EUR)' },
   { value: 'aid_military_eur', label: 'Military Aid (EUR)' },
   { value: 'new_sanctions_entities', label: 'New Sanctions' },
   { value: 'gdelt_tone', label: 'GDELT Tone' },

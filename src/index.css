@@ -18,8 +18,8 @@
   --shadow-card: 0 2px 8px rgba(0, 0, 0, 0.3);
 
   /* Semantic colors for the 3 statement types */
-  --color-rrls: #1f77b4;
-  --color-nts: #ff7f0e;
+  --color-rrls: #d32f2f;
+  --color-nts: #fdd835;
   --color-crls: #d62728;
   --color-green: #2ca02c;
   --color-purple: #9467bd;
@@ -204,8 +204,51 @@ body {
 }
 
 .mode-btn:hover { background: var(--bg-hover); }
-.mode-btn.active-rrls { border-color: var(--color-rrls); color: var(--color-accent); background: rgba(31,119,180,0.15); }
-.mode-btn.active-nts { border-color: var(--color-nts); color: var(--color-nts); background: rgba(255,127,14,0.15); }
+.mode-btn.active-rrls { border-color: var(--color-rrls); color: var(--color-rrls); background: rgba(211,47,47,0.15); }
+.mode-btn.active-nts { border-color: var(--color-nts); color: var(--color-nts); background: rgba(253,216,53,0.15); }
+
+.confidence-slider {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.confidence-slider input[type="range"] {
+  -webkit-appearance: none;
+  width: 100px;
+  height: 4px;
+  background: var(--color-border);
+  border-radius: 2px;
+  outline: none;
+}
+
+.confidence-slider input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--color-accent);
+  cursor: pointer;
+  border: 2px solid var(--bg-primary);
+}
+
+.confidence-slider input[type="range"]::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--color-accent);
+  cursor: pointer;
+  border: 2px solid var(--bg-primary);
+}
+
+.confidence-slider .conf-value {
+  font-weight: 600;
+  color: var(--color-accent);
+  min-width: 20px;
+  text-align: center;
+}
 
 .result-count {
   font-size: 13px;

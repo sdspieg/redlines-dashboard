@@ -45,11 +45,11 @@ export default function Overview() {
           <div className="stat-val">{stats.total_chunks.toLocaleString()}</div>
           <div className="stat-label">Chunks</div>
         </div>
-        <div className="stat-card" style={{ borderColor: '#1f77b4' }}>
+        <div className="stat-card" style={{ borderColor: '#d32f2f' }}>
           <div className="stat-val">{stats.rls2_confirmed.toLocaleString()}</div>
           <div className="stat-label">RRLS ({((stats.rls2_confirmed / stats.total_chunks) * 100).toFixed(1)}% of chunks)</div>
         </div>
-        <div className="stat-card" style={{ borderColor: '#ff7f0e' }}>
+        <div className="stat-card" style={{ borderColor: '#fdd835' }}>
           <div className="stat-val">{stats.nts2_confirmed.toLocaleString()}</div>
           <div className="stat-label">NTS ({((stats.nts2_confirmed / stats.total_chunks) * 100).toFixed(1)}% of chunks)</div>
         </div>
@@ -78,7 +78,7 @@ export default function Overview() {
               y: funnelLabels,
               x: funnelVals,
               textinfo: 'value+percent initial',
-              marker: { color: ['#a0a0b0', '#1f77b4', '#2980b9', '#1a5276', '#d62728'] },
+              marker: { color: ['#a0a0b0', '#d32f2f', '#c62828', '#b71c1c', '#d62728'] },
             }]}
             layout={{
               paper_bgcolor: 'transparent', plot_bgcolor: 'transparent',
@@ -103,7 +103,7 @@ export default function Overview() {
               y: ntsFunnel,
               x: ntsVals,
               textinfo: 'value+percent initial',
-              marker: { color: ['#a0a0b0', '#ff7f0e', '#e67e22'] },
+              marker: { color: ['#a0a0b0', '#fdd835', '#f9a825'] },
             }]}
             layout={{
               paper_bgcolor: 'transparent', plot_bgcolor: 'transparent',
@@ -129,13 +129,13 @@ export default function Overview() {
             data={[
               {
                 type: 'bar', name: 'RRLS', x: top.map(r => r.source), y: top.map(r => r.confirmed ?? 0),
-                marker: { color: '#1f77b4' },
+                marker: { color: '#d32f2f' },
               },
               {
                 type: 'bar', name: 'NTS',
                 x: nts.slice(0, 15).map(r => r.source),
                 y: nts.slice(0, 15).map(r => r.confirmed ?? 0),
-                marker: { color: '#ff7f0e' },
+                marker: { color: '#fdd835' },
               },
             ]}
             layout={{
@@ -166,7 +166,7 @@ export default function Overview() {
                 type: 'bar', name: 'RRLS %',
                 x: top.map(r => r.source),
                 y: top.map(r => { const tc = chunksBySource[r.source] || 0; return tc > 0 ? ((r.confirmed ?? 0) / tc) * 100 : 0; }),
-                marker: { color: '#1f77b4' },
+                marker: { color: '#d32f2f' },
                 text: top.map(r => { const tc = chunksBySource[r.source] || 0; return tc > 0 ? (((r.confirmed ?? 0) / tc) * 100).toFixed(1) + '%' : '0%'; }),
                 textposition: 'outside',
               },
@@ -174,7 +174,7 @@ export default function Overview() {
                 type: 'bar', name: 'NTS %',
                 x: nts.slice(0, 15).map(r => r.source),
                 y: nts.slice(0, 15).map(r => { const tc = chunksBySource[r.source] || 0; return tc > 0 ? ((r.confirmed ?? 0) / tc) * 100 : 0; }),
-                marker: { color: '#ff7f0e' },
+                marker: { color: '#fdd835' },
                 text: nts.slice(0, 15).map(r => { const tc = chunksBySource[r.source] || 0; return tc > 0 ? (((r.confirmed ?? 0) / tc) * 100).toFixed(1) + '%' : '0%'; }),
                 textposition: 'outside',
               },
@@ -389,8 +389,8 @@ export default function Overview() {
           </div>
           <Plot
             data={[
-              { type: 'bar', name: 'RRLS', x: comp.map(r => r.db), y: comp.map(r => r.rrls), marker: { color: '#1f77b4' } },
-              { type: 'bar', name: 'NTS', x: comp.map(r => r.db), y: comp.map(r => r.nts), marker: { color: '#ff7f0e' } },
+              { type: 'bar', name: 'RRLS', x: comp.map(r => r.db), y: comp.map(r => r.rrls), marker: { color: '#d32f2f' } },
+              { type: 'bar', name: 'NTS', x: comp.map(r => r.db), y: comp.map(r => r.nts), marker: { color: '#fdd835' } },
             ]}
             layout={{
               barmode: 'group',
@@ -419,7 +419,7 @@ export default function Overview() {
                 type: 'bar', name: 'RRLS %',
                 x: comp.map(r => r.db),
                 y: comp.map(r => r.total_chunks > 0 ? (r.rrls / r.total_chunks) * 100 : 0),
-                marker: { color: '#1f77b4' },
+                marker: { color: '#d32f2f' },
                 text: comp.map(r => r.total_chunks > 0 ? ((r.rrls / r.total_chunks) * 100).toFixed(1) + '%' : '0%'),
                 textposition: 'outside',
               },
@@ -427,7 +427,7 @@ export default function Overview() {
                 type: 'bar', name: 'NTS %',
                 x: comp.map(r => r.db),
                 y: comp.map(r => r.total_chunks > 0 ? (r.nts / r.total_chunks) * 100 : 0),
-                marker: { color: '#ff7f0e' },
+                marker: { color: '#fdd835' },
                 text: comp.map(r => r.total_chunks > 0 ? ((r.nts / r.total_chunks) * 100).toFixed(1) + '%' : '0%'),
                 textposition: 'outside',
               },

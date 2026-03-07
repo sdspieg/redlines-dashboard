@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import TabNav from './components/TabNav';
+import MethodologyModal from './components/MethodologyModal';
 import Overview from './components/Overview';
 import RRLSExplorer from './components/RRLSExplorer';
 import NTSExplorer from './components/NTSExplorer';
@@ -21,6 +22,7 @@ export default function App() {
         <div className="header-center">
           <h1>Red Lines Dashboard</h1>
           <p className="subtitle">Russian Red Line & Nuclear Threat Statement Analysis</p>
+          <MethodologyModal />
         </div>
         <a href="https://hcss.nl/" target="_blank" rel="noopener noreferrer">
           <img src={import.meta.env.BASE_URL + 'hcss_logo.svg'} alt="HCSS" className="header-logo" />

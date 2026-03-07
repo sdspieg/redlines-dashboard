@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
-import Plot from 'react-plotly.js';
+import Plot from './Plot';
 import { load } from '../data';
 import ChartInfo from './ChartInfo';
-import type { OverviewStats, SourceRow, ComparativeRow } from '../types';
+import type { OverviewStats, SourceRow, ComparativeRow, RRLSStatement, NTSStatement } from '../types';
+import StatementDrilldown from './StatementDrilldown';
 
 export default function Overview() {
   const [stats, setStats] = useState<OverviewStats | null>(null);
@@ -11,6 +12,9 @@ export default function Overview() {
   const [nts, setNts] = useState<SourceRow[]>([]);
   const [comp, setComp] = useState<ComparativeRow[]>([]);
   const [selectedSource, setSelectedSource] = useState<string | null>(null);
+  const [rrlsStmts, setRrlsStmts] = useState<RRLSStatement[]>([]);
+  const [ntsStmts, setNtsStmts] = useState<NTSStatement[]>([]);
+  const [drilldown, setDrilldown] = useState<{ title: string; stmts: (RRLSStatement | NTSStatement)[]; mode: 'rrls' | 'nts' } | null>(null);
 
   useEffect(() => {
     load<OverviewStats>('overview_stats.json').then(setStats);
@@ -18,6 +22,8 @@ export default function Overview() {
     load<SourceRow[]>('rrls_by_source.json').then(setRrls);
     load<SourceRow[]>('nts_by_source.json').then(setNts);
     load<ComparativeRow[]>('comparative_by_db.json').then(setComp);
+    load<RRLSStatement[]>('rrls_statements.json').then(setRrlsStmts);
+    load<NTSStatement[]>('nts_statements.json').then(setNtsStmts);
   }, []);
 
   if (!stats) return <div className="loading">Loading...</div>;
@@ -78,6 +84,7 @@ export default function Overview() {
               y: funnelLabels,
               x: funnelVals,
               textinfo: 'value+percent initial',
+              textfont: { weight: 700, size: 14 },
               marker: { color: ['#a0a0b0', '#d32f2f', '#c62828', '#b71c1c', '#d62728'] },
             }]}
             layout={{
@@ -103,6 +110,7 @@ export default function Overview() {
               y: ntsFunnel,
               x: ntsVals,
               textinfo: 'value+percent initial',
+              textfont: { weight: 700, size: 14 },
               marker: { color: ['#a0a0b0', '#fdd835', '#f9a825'] },
             }]}
             layout={{
@@ -149,7 +157,16 @@ export default function Overview() {
               legend: { orientation: 'h', y: 1.1 },
             }}
             config={{ displayModeBar: false, responsive: true }}
-            style={{ width: '100%' }}
+            onClick={(e: { points: { x: string; data: { name: string } }[] }) => {
+              const pt = e.points?.[0];
+              if (!pt) return;
+              const source = pt.x;
+              const isNts = pt.data.name.includes('NTS');
+              const stmts = isNts ? ntsStmts : rrlsStmts;
+              const matching = stmts.filter(s => s.source === source);
+              setDrilldown({ title: `${pt.data.name} — ${source}`, stmts: matching, mode: isNts ? 'nts' : 'rrls' });
+            }}
+            style={{ width: '100%', cursor: 'pointer' }}
           />
         </div>
         <div className="chart-box">
@@ -190,7 +207,16 @@ export default function Overview() {
               legend: { orientation: 'h', y: 1.1 },
             }}
             config={{ displayModeBar: false, responsive: true }}
-            style={{ width: '100%' }}
+            onClick={(e: { points: { x: string; data: { name: string } }[] }) => {
+              const pt = e.points?.[0];
+              if (!pt) return;
+              const source = pt.x;
+              const isNts = pt.data.name.includes('NTS');
+              const stmts = isNts ? ntsStmts : rrlsStmts;
+              const matching = stmts.filter(s => s.source === source);
+              setDrilldown({ title: `${pt.data.name} — ${source}`, stmts: matching, mode: isNts ? 'nts' : 'rrls' });
+            }}
+            style={{ width: '100%', cursor: 'pointer' }}
           />
         </div>
       </div>
@@ -402,7 +428,16 @@ export default function Overview() {
               legend: { orientation: 'h', y: 1.1 },
             }}
             config={{ displayModeBar: false, responsive: true }}
-            style={{ width: '100%' }}
+            onClick={(e: { points: { x: string; data: { name: string } }[] }) => {
+              const pt = e.points?.[0];
+              if (!pt) return;
+              const db = pt.x;
+              const isNts = pt.data.name.includes('NTS');
+              const stmts = isNts ? ntsStmts : rrlsStmts;
+              const matching = stmts.filter(s => s.db === db);
+              setDrilldown({ title: `${pt.data.name} — ${db}`, stmts: matching, mode: isNts ? 'nts' : 'rrls' });
+            }}
+            style={{ width: '100%', cursor: 'pointer' }}
           />
         </div>
         <div className="chart-box">
@@ -442,10 +477,28 @@ export default function Overview() {
               legend: { orientation: 'h', y: 1.1 },
             }}
             config={{ displayModeBar: false, responsive: true }}
-            style={{ width: '100%' }}
+            onClick={(e: { points: { x: string; data: { name: string } }[] }) => {
+              const pt = e.points?.[0];
+              if (!pt) return;
+              const db = pt.x;
+              const isNts = pt.data.name.includes('NTS');
+              const stmts = isNts ? ntsStmts : rrlsStmts;
+              const matching = stmts.filter(s => s.db === db);
+              setDrilldown({ title: `${pt.data.name} — ${db}`, stmts: matching, mode: isNts ? 'nts' : 'rrls' });
+            }}
+            style={{ width: '100%', cursor: 'pointer' }}
           />
         </div>
       </div>
+
+      {drilldown && (
+        <StatementDrilldown
+          mode={drilldown.mode}
+          title={drilldown.title}
+          statements={drilldown.stmts}
+          onClose={() => setDrilldown(null)}
+        />
+      )}
 
       <div className="info-box">
         <p>Date range: <strong>{stats.date_min}</strong> to <strong>{stats.date_max}</strong> | {chunks.length} unique sources across {stats.total_sources} institutions</p>

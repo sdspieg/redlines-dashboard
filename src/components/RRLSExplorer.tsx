@@ -1,8 +1,9 @@
 import { useEffect, useState, useMemo } from 'react';
-import Plot from 'react-plotly.js';
+import Plot from './Plot';
 import { load } from '../data';
 import { RRLS_COLORS, RRLS_ORDINAL_SCORES, RRLS_ORDINAL_DIMS, RRLS_DIM_COLORS, getDimValueColor } from '../colors';
 import ChartInfo from './ChartInfo';
+import StatementDrilldown from './StatementDrilldown';
 import type { TaxonomyRow, RRLSStatement } from '../types';
 
 const DIM_LABELS: Record<string, string> = {
@@ -40,6 +41,7 @@ export default function RRLSExplorer() {
   const [crossDim2, setCrossDim2] = useState('audience');
   const [showBreakdowns, setShowBreakdowns] = useState(false);
   const [minConfidence, setMinConfidence] = useState(7);
+  const [drilldown, setDrilldown] = useState<{ title: string; stmts: RRLSStatement[] } | null>(null);
 
   useEffect(() => {
     load<Record<string, TaxonomyRow[]>>('rrls_taxonomy.json').then(setTaxonomy);
@@ -259,7 +261,14 @@ export default function RRLSExplorer() {
               xaxis: { title: 'Count' },
             }}
             config={{ displayModeBar: false, responsive: true }}
-            style={{ width: '100%' }}
+            style={{ width: '100%', cursor: 'pointer' }}
+            onClick={(e: { points: { y: string }[] }) => {
+              const val = e.points?.[0]?.y;
+              if (!val) return;
+              const field = selectedDim === 'line' ? 'line_type' : selectedDim === 'threat' ? 'threat_type' : selectedDim;
+              const matching = filteredStatements.filter(s => (s as unknown as Record<string, unknown>)[field] === val);
+              setDrilldown({ title: `${dimLabel}: ${val}`, stmts: matching });
+            }}
           />
         </div>
 
@@ -291,7 +300,14 @@ export default function RRLSExplorer() {
               xaxis: { title: '% of RRLS Statements', ticksuffix: '%' },
             }}
             config={{ displayModeBar: false, responsive: true }}
-            style={{ width: '100%' }}
+            style={{ width: '100%', cursor: 'pointer' }}
+            onClick={(e: { points: { y: string }[] }) => {
+              const val = e.points?.[0]?.y;
+              if (!val) return;
+              const field = selectedDim === 'line' ? 'line_type' : selectedDim === 'threat' ? 'threat_type' : selectedDim;
+              const matching = filteredStatements.filter(s => (s as unknown as Record<string, unknown>)[field] === val);
+              setDrilldown({ title: `${dimLabel}: ${val}`, stmts: matching });
+            }}
           />
         </div>
       </div>
@@ -338,7 +354,16 @@ export default function RRLSExplorer() {
                 legend: { orientation: 'h', y: 1.15, font: { size: 10 } },
               }}
               config={{ displayModeBar: false, responsive: true }}
-              style={{ width: '100%' }}
+              style={{ width: '100%', cursor: 'pointer' }}
+              onClick={(e: { points: { x: string; data: { name: string } }[] }) => {
+                const pt = e.points?.[0];
+                if (!pt) return;
+                const source = pt.x;
+                const val = pt.data.name;
+                const field = selectedDim === 'line' ? 'line_type' : selectedDim === 'threat' ? 'threat_type' : selectedDim;
+                const matching = filteredStatements.filter(s => s.source === source && (s as unknown as Record<string, unknown>)[field] === val);
+                setDrilldown({ title: `${dimLabel}: ${val} (${source})`, stmts: matching });
+              }}
             />
           </div>
         </div>
@@ -377,7 +402,16 @@ export default function RRLSExplorer() {
                 yaxis: { title: 'Count' },
               }}
               config={{ displayModeBar: false, responsive: true }}
-              style={{ width: '100%' }}
+              style={{ width: '100%', cursor: 'pointer' }}
+              onClick={(e: { points: { x: string; data: { name: string } }[] }) => {
+                const pt = e.points?.[0];
+                if (!pt) return;
+                const month = pt.x;
+                const val = pt.data.name;
+                const field = selectedDim === 'line' ? 'line_type' : selectedDim === 'threat' ? 'threat_type' : selectedDim;
+                const matching = filteredStatements.filter(s => s.date?.startsWith(month) && (s as unknown as Record<string, unknown>)[field] === val);
+                setDrilldown({ title: `${dimLabel}: ${val} (${month})`, stmts: matching });
+              }}
             />
           </div>
         </div>
@@ -416,7 +450,13 @@ export default function RRLSExplorer() {
                   yaxis: { title: 'Ordinal Score (higher = more severe)' },
                 }}
                 config={{ displayModeBar: false, responsive: true }}
-                style={{ width: '100%' }}
+                style={{ width: '100%', cursor: 'pointer' }}
+                onClick={(e: { points: { x: string }[] }) => {
+                  const month = e.points?.[0]?.x;
+                  if (!month) return;
+                  const matching = filteredStatements.filter(s => s.date?.startsWith(month));
+                  setDrilldown({ title: `All RRLS (${month})`, stmts: matching });
+                }}
               />
             </div>
           </div>
@@ -473,7 +513,15 @@ export default function RRLSExplorer() {
                       yaxis: { title: 'Count' },
                     }}
                     config={{ displayModeBar: false, responsive: true }}
-                    style={{ width: '100%' }}
+                    style={{ width: '100%', cursor: 'pointer' }}
+                    onClick={(e: { points: { x: string; data: { name: string } }[] }) => {
+                      const pt = e.points?.[0];
+                      if (!pt) return;
+                      const month = pt.x;
+                      const val = pt.data.name;
+                      const matching = filteredStatements.filter(s => s.date?.startsWith(month) && (s as unknown as Record<string, unknown>)[dim] === val);
+                      setDrilldown({ title: `${DIM_LABELS[dim] || dim}: ${val} (${month})`, stmts: matching });
+                    }}
                   />
                 </div>
               </div>
@@ -498,6 +546,14 @@ export default function RRLSExplorer() {
           <span style={{ color: '#d62728', fontSize: 12 }}>Pick two different dimensions</span>
         )}
       </div>
+      {drilldown && (
+        <StatementDrilldown
+          mode="rrls"
+          title={drilldown.title}
+          statements={drilldown.stmts}
+          onClose={() => setDrilldown(null)}
+        />
+      )}
       {crossRows.length > 0 && (
         <div className="chart-row">
           <div className="chart-box">
@@ -515,7 +571,7 @@ export default function RRLSExplorer() {
                 colorscale: [[0, '#1a1a2e'], [0.5, '#d32f2f'], [1, '#ef9a9a']],
                 text: z.map(row => row.map(v => v.toString())),
                 texttemplate: '%{text}',
-                hovertemplate: `%{y} ${'\u00d7'} %{x}: %{z}<extra></extra>`,
+                hovertemplate: `%{y} ${'\u00d7'} %{x}: %{z} (click to view)<extra></extra>`,
               }]}
               layout={{
                 paper_bgcolor: 'transparent', plot_bgcolor: 'transparent',
@@ -525,7 +581,22 @@ export default function RRLSExplorer() {
                 xaxis: { tickangle: -45 },
               }}
               config={{ displayModeBar: false, responsive: true }}
-              style={{ width: '100%' }}
+              style={{ width: '100%', cursor: 'pointer' }}
+              onClick={(e: { points: { x: string; y: string; z: number }[] }) => {
+                const pt = e.points?.[0];
+                if (!pt || pt.z === 0) return;
+                const v1 = pt.y;
+                const v2 = pt.x;
+                const matching = filteredStatements.filter(s => {
+                  const sv1 = (s as unknown as Record<string, unknown>)[crossDim1] as string;
+                  const sv2 = (s as unknown as Record<string, unknown>)[crossDim2] as string;
+                  return sv1 === v1 && sv2 === v2;
+                });
+                setDrilldown({
+                  title: `${DIM_LABELS[crossDim1] || crossDim1}: ${v1} × ${DIM_LABELS[crossDim2] || crossDim2}: ${v2}`,
+                  stmts: matching,
+                });
+              }}
             />
           </div>
         </div>

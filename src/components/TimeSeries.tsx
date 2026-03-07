@@ -1,9 +1,10 @@
-import { useEffect, useState } from 'react';
-import Plot from 'react-plotly.js';
+import { useEffect, useState, useMemo } from 'react';
+import Plot from './Plot';
 import { load } from '../data';
 import { getColor } from '../colors';
 import ChartInfo from './ChartInfo';
-import type { MonthlyRow, WarContextRow } from '../types';
+import StatementDrilldown from './StatementDrilldown';
+import type { MonthlyRow, WarContextRow, RRLSStatement, NTSStatement } from '../types';
 
 export default function TimeSeries() {
   const [rrls, setRrls] = useState<MonthlyRow[]>([]);
@@ -12,6 +13,9 @@ export default function TimeSeries() {
   const [chunks, setChunks] = useState<{ month: string; total_chunks: number }[]>([]);
   const [warPers, setWarPers] = useState<WarContextRow[]>([]);
   const [warAcled, setWarAcled] = useState<WarContextRow[]>([]);
+  const [rrlsStmts, setRrlsStmts] = useState<RRLSStatement[]>([]);
+  const [ntsStmts, setNtsStmts] = useState<NTSStatement[]>([]);
+  const [drilldown, setDrilldown] = useState<{ title: string; stmts: (RRLSStatement | NTSStatement)[]; mode: 'rrls' | 'nts' } | null>(null);
 
   useEffect(() => {
     load<MonthlyRow[]>('rrls_monthly.json').then(setRrls);
@@ -20,6 +24,8 @@ export default function TimeSeries() {
     load<{ month: string; total_chunks: number }[]>('chunks_monthly.json').then(setChunks);
     load<WarContextRow[]>('war_context_personnel.json').then(setWarPers);
     load<WarContextRow[]>('war_context_acled.json').then(setWarAcled);
+    load<RRLSStatement[]>('rrls_statements.json').then(setRrlsStmts);
+    load<NTSStatement[]>('nts_statements.json').then(setNtsStmts);
   }, []);
 
   const agg = (data: MonthlyRow[]) => {
@@ -74,7 +80,18 @@ export default function TimeSeries() {
               xaxis: { title: 'Month' }, yaxis: { title: 'Count' },
             }}
             config={{ displayModeBar: false, responsive: true }}
-            style={{ width: '100%' }}
+            onClick={(e: { points: { x: string; data: { name: string } }[] }) => {
+              const pt = e.points?.[0];
+              if (!pt) return;
+              const month = pt.x;
+              const name = pt.data.name;
+              if (name === 'CRLS') return;
+              const isNts = name.includes('NTS');
+              const stmts = isNts ? ntsStmts : rrlsStmts;
+              const matching = stmts.filter(s => s.date?.startsWith(month));
+              setDrilldown({ title: `${name} (${month})`, stmts: matching, mode: isNts ? 'nts' : 'rrls' });
+            }}
+            style={{ width: '100%', cursor: 'pointer' }}
           />
         </div>
       </div>
@@ -103,7 +120,18 @@ export default function TimeSeries() {
               xaxis: { title: 'Month' }, yaxis: { title: '% of Chunks', ticksuffix: '%' },
             }}
             config={{ displayModeBar: false, responsive: true }}
-            style={{ width: '100%' }}
+            onClick={(e: { points: { x: string; data: { name: string } }[] }) => {
+              const pt = e.points?.[0];
+              if (!pt) return;
+              const month = pt.x;
+              const name = pt.data.name;
+              if (name === 'CRLS %') return;
+              const isNts = name.includes('NTS');
+              const stmts = isNts ? ntsStmts : rrlsStmts;
+              const matching = stmts.filter(s => s.date?.startsWith(month));
+              setDrilldown({ title: `${name} (${month})`, stmts: matching, mode: isNts ? 'nts' : 'rrls' });
+            }}
+            style={{ width: '100%', cursor: 'pointer' }}
           />
         </div>
       </div>
@@ -133,7 +161,15 @@ export default function TimeSeries() {
                 yaxis2: { title: 'Personnel Losses', side: 'right', overlaying: 'y' },
               }}
               config={{ displayModeBar: false, responsive: true }}
-              style={{ width: '100%' }}
+              onClick={(e: { points: { x: string; data: { name: string } }[] }) => {
+                const pt = e.points?.[0];
+                if (!pt) return;
+                const month = pt.x;
+                if (pt.data.name !== 'RRLS') return;
+                const matching = rrlsStmts.filter(s => s.date?.startsWith(month));
+                setDrilldown({ title: `RRLS (${month})`, stmts: matching, mode: 'rrls' });
+              }}
+              style={{ width: '100%', cursor: 'pointer' }}
             />
           </div>
         </div>
@@ -164,7 +200,15 @@ export default function TimeSeries() {
                 yaxis2: { title: 'ACLED Events', side: 'right', overlaying: 'y' },
               }}
               config={{ displayModeBar: false, responsive: true }}
-              style={{ width: '100%' }}
+              onClick={(e: { points: { x: string; data: { name: string } }[] }) => {
+                const pt = e.points?.[0];
+                if (!pt) return;
+                const month = pt.x;
+                if (!pt.data.name.includes('NTS')) return;
+                const matching = ntsStmts.filter(s => s.date?.startsWith(month));
+                setDrilldown({ title: `NTS (${month})`, stmts: matching, mode: 'nts' });
+              }}
+              style={{ width: '100%', cursor: 'pointer' }}
             />
           </div>
         </div>
@@ -205,10 +249,27 @@ export default function TimeSeries() {
               xaxis: { title: 'Month' }, yaxis: { title: 'Count' },
             }}
             config={{ displayModeBar: false, responsive: true }}
-            style={{ width: '100%' }}
+            onClick={(e: { points: { x: string; data: { name: string } }[] }) => {
+              const pt = e.points?.[0];
+              if (!pt) return;
+              const month = pt.x;
+              const source = pt.data.name;
+              const matching = rrlsStmts.filter(s => s.date?.startsWith(month) && s.source === source);
+              setDrilldown({ title: `RRLS: ${source} (${month})`, stmts: matching, mode: 'rrls' });
+            }}
+            style={{ width: '100%', cursor: 'pointer' }}
           />
         </div>
       </div>
+
+      {drilldown && (
+        <StatementDrilldown
+          mode={drilldown.mode}
+          title={drilldown.title}
+          statements={drilldown.stmts}
+          onClose={() => setDrilldown(null)}
+        />
+      )}
     </div>
   );
 }

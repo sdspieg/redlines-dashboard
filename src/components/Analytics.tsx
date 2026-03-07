@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from 'react';
-import Plot from 'react-plotly.js';
+import Plot from './Plot';
 import { load } from '../data';
 import ChartInfo from './ChartInfo';
 import type {

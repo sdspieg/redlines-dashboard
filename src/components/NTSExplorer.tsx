@@ -1,8 +1,9 @@
 import { useEffect, useState, useMemo } from 'react';
-import Plot from 'react-plotly.js';
+import Plot from './Plot';
 import { load } from '../data';
 import { NTS_COLORS, NTS_ORDINAL_SCORES, NTS_ORDINAL_DIMS, NTS_DIM_COLORS, getDimValueColor } from '../colors';
 import ChartInfo from './ChartInfo';
+import StatementDrilldown from './StatementDrilldown';
 import type { TaxonomyRow, NTSSeverityRow, NTSStatement } from '../types';
 
 const DIM_LABELS: Record<string, string> = {
@@ -25,6 +26,7 @@ export default function NTSExplorer() {
   const [crossDim1, setCrossDim1] = useState('nts_threat_type');
   const [crossDim2, setCrossDim2] = useState('tone');
   const [minConfidence, setMinConfidence] = useState(7);
+  const [drilldown, setDrilldown] = useState<{ title: string; stmts: NTSStatement[] } | null>(null);
 
   useEffect(() => {
     load<Record<string, TaxonomyRow[]>>('nts_taxonomy.json').then(setTaxonomy);
@@ -175,7 +177,13 @@ export default function NTSExplorer() {
               })),
             }}
             config={{ displayModeBar: false, responsive: true }}
-            style={{ width: '100%' }}
+            style={{ width: '100%', cursor: 'pointer' }}
+            onClick={(e: { points: { y: string }[] }) => {
+              const raw = e.points?.[0]?.y?.replace(/^☢\s*/, '');
+              if (!raw) return;
+              const matching = filteredStatements.filter(s => (s as unknown as Record<string, unknown>)[selectedDim] === raw);
+              setDrilldown({ title: `${dimLabel}: ${raw}`, stmts: matching });
+            }}
           />
         </div>
 
@@ -220,7 +228,13 @@ export default function NTSExplorer() {
               })),
             }}
             config={{ displayModeBar: false, responsive: true }}
-            style={{ width: '100%' }}
+            style={{ width: '100%', cursor: 'pointer' }}
+            onClick={(e: { points: { y: string }[] }) => {
+              const raw = e.points?.[0]?.y?.replace(/^☢\s*/, '');
+              if (!raw) return;
+              const matching = filteredStatements.filter(s => (s as unknown as Record<string, unknown>)[selectedDim] === raw);
+              setDrilldown({ title: `${dimLabel}: ${raw}`, stmts: matching });
+            }}
           />
         </div>
       </div>
@@ -261,7 +275,13 @@ export default function NTSExplorer() {
                   yaxis: { title: 'Severity Score (higher = more severe)' },
                 }}
                 config={{ displayModeBar: false, responsive: true }}
-                style={{ width: '100%' }}
+                style={{ width: '100%', cursor: 'pointer' }}
+                onClick={(e: { points: { x: string }[] }) => {
+                  const month = e.points?.[0]?.x;
+                  if (!month) return;
+                  const matching = filteredStatements.filter(s => s.date?.startsWith(month));
+                  setDrilldown({ title: `All NTS (${month})`, stmts: matching });
+                }}
               />
             </div>
           </div>
@@ -310,7 +330,15 @@ export default function NTSExplorer() {
                       yaxis: { title: 'Count' },
                     }}
                     config={{ displayModeBar: false, responsive: true }}
-                    style={{ width: '100%' }}
+                    style={{ width: '100%', cursor: 'pointer' }}
+                    onClick={(e: { points: { x: string; data: { name: string } }[] }) => {
+                      const pt = e.points?.[0];
+                      if (!pt) return;
+                      const month = pt.x;
+                      const val = pt.data.name.replace(/^☢\s*/, '');
+                      const matching = filteredStatements.filter(s => s.date?.startsWith(month) && (s as unknown as Record<string, unknown>)[dim] === val);
+                      setDrilldown({ title: `${DIM_LABELS[dim] || dim}: ${val} (${month})`, stmts: matching });
+                    }}
                   />
                 </div>
               </div>
@@ -319,6 +347,14 @@ export default function NTSExplorer() {
         </>
       )}
 
+      {drilldown && (
+        <StatementDrilldown
+          mode="nts"
+          title={drilldown.title}
+          statements={drilldown.stmts}
+          onClose={() => setDrilldown(null)}
+        />
+      )}
       {/* Cross-tabulation with two dimension pickers */}
       <h3 style={{ marginTop: 24 }}>Cross-Tabulation</h3>
       <div className="filter-bar">
@@ -352,7 +388,7 @@ export default function NTSExplorer() {
                 colorscale: [[0, '#1a1a2e'], [0.5, '#fdd835'], [1, '#fff9c4']],
                 text: ctZ.map(row => row.map(v => v.toString())),
                 texttemplate: '%{text}',
-                hovertemplate: `%{y} ${'\u00d7'} %{x}: %{z}<extra></extra>`,
+                hovertemplate: `%{y} ${'\u00d7'} %{x}: %{z} (click to view)<extra></extra>`,
               }]}
               layout={{
                 paper_bgcolor: 'transparent', plot_bgcolor: 'transparent',
@@ -362,7 +398,24 @@ export default function NTSExplorer() {
                 xaxis: { tickangle: -45 },
               }}
               config={{ displayModeBar: false, responsive: true }}
-              style={{ width: '100%' }}
+              style={{ width: '100%', cursor: 'pointer' }}
+              onClick={(e: { points: { x: string; y: string; z: number }[] }) => {
+                const pt = e.points?.[0];
+                if (!pt || pt.z === 0) return;
+                // Strip ☢ prefix from labels
+                const strip = (s: string) => s.replace(/^☢\s*/, '');
+                const v1 = strip(pt.y);
+                const v2 = strip(pt.x);
+                const matching = filteredStatements.filter(s => {
+                  const sv1 = (s as unknown as Record<string, unknown>)[crossDim1] as string;
+                  const sv2 = (s as unknown as Record<string, unknown>)[crossDim2] as string;
+                  return sv1 === v1 && sv2 === v2;
+                });
+                setDrilldown({
+                  title: `${DIM_LABELS[crossDim1] || crossDim1}: ${v1} × ${DIM_LABELS[crossDim2] || crossDim2}: ${v2}`,
+                  stmts: matching,
+                });
+              }}
             />
           </div>
         </div>

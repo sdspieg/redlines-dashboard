@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import Plot from 'react-plotly.js';
+import Plot from './Plot';
 import { load } from '../data';
 import { TAB20, getColor } from '../colors';
 import ChartInfo from './ChartInfo';
@@ -23,6 +23,17 @@ export default function CRLSExplorer() {
 
   const totalTerritory = territories.slice(0, 20).reduce((s, r) => s + r.count, 0);
 
+  // Group small framing types into "Other" (< 3% of total)
+  const framingTotal = framing.reduce((s, r) => s + r.count, 0);
+  const threshold = framingTotal * 0.03;
+  const framingGrouped: FramingRow[] = [];
+  let otherCount = 0;
+  for (const r of framing) {
+    if (r.count >= threshold) framingGrouped.push(r);
+    else otherCount += r.count;
+  }
+  if (otherCount > 0) framingGrouped.push({ framing_type: 'Other', count: otherCount });
+
   // Aggregate monthly by month
   const byMonth: Record<string, number> = {};
   for (const r of monthly) {
@@ -45,7 +56,7 @@ export default function CRLSExplorer() {
       <p className="subtitle">RRLS that invoke civilizational framing — cultural identity, historical destiny, or civilizational conflict narratives.</p>
 
       <div className="chart-row">
-        <div className="chart-box">
+        <div className="chart-box" style={{ minWidth: '100%' }}>
           <div className="chart-title-bar">
             <h4>Civilizational Framing Types</h4>
             <ChartInfo
@@ -56,25 +67,28 @@ export default function CRLSExplorer() {
           <Plot
             data={[{
               type: 'pie',
-              labels: framing.map(r => r.framing_type),
-              values: framing.map(r => r.count),
+              labels: framingGrouped.map(r => r.framing_type),
+              values: framingGrouped.map(r => r.count),
               hole: 0.4,
               textinfo: 'label+percent',
+              textposition: 'outside',
               hovertemplate: '%{label}: %{value} (%{percent})<extra></extra>',
-              marker: { colors: framing.map((_, i) => TAB20[i % TAB20.length]) },
+              marker: { colors: framingGrouped.map((_, i) => TAB20[i % TAB20.length]) },
             }]}
             layout={{
               paper_bgcolor: 'transparent', plot_bgcolor: 'transparent',
               font: { color: '#e0e0e0' },
-              margin: { t: 10, b: 20, l: 20, r: 20 },
-              height: 400,
-              showlegend: true,
-              legend: { font: { size: 10 } },
+              margin: { t: 40, b: 40, l: 40, r: 40 },
+              height: 500,
+              showlegend: false,
             }}
             config={{ displayModeBar: false, responsive: true }}
             style={{ width: '100%' }}
           />
         </div>
+      </div>
+
+      <div className="chart-row">
         <div className="chart-box">
           <div className="chart-title-bar">
             <h4>Territories Mentioned (Top 20)</h4>

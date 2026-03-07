@@ -527,9 +527,167 @@ h3 { margin-bottom: 12px; font-weight: 600; }
   color: var(--text-primary);
 }
 
-@media (max-width: 768px) {
+/* Methodology button */
+.methodology-btn {
+  background: transparent;
+  border: 1px solid var(--color-border);
+  color: var(--text-secondary);
+  padding: 4px 14px;
+  border-radius: 14px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 12px;
+  margin-top: 6px;
+  transition: all 0.2s;
+}
+
+.methodology-btn:hover {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+  background: rgba(79, 195, 247, 0.08);
+}
+
+/* Methodology modal */
+.methodology-modal {
+  background: #ffffff;
+  border: 1px solid #4fc3f7;
+  border-radius: var(--radius-lg);
+  padding: 32px;
+  max-width: 700px;
+  width: 90%;
+  max-height: 85vh;
+  overflow-y: auto;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.methodology-modal h2 {
+  color: #1f77b4;
+  font-size: 20px;
+  margin-bottom: 20px;
+}
+
+.methodology-modal h3 {
+  color: #333;
+  font-size: 15px;
+  margin-top: 20px;
+  margin-bottom: 8px;
+}
+
+.methodology-modal p,
+.methodology-modal li {
+  color: #444;
+  font-size: 13px;
+  line-height: 1.7;
+  margin-bottom: 8px;
+}
+
+.methodology-modal ol,
+.methodology-modal ul {
+  padding-left: 20px;
+  margin-bottom: 12px;
+}
+
+.methodology-modal .chart-info-close {
+  margin-top: 20px;
+}
+
+/* Statement drill-down modal */
+.drilldown-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.drilldown-modal {
+  background: var(--bg-primary);
+  border: 1px solid var(--color-accent);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  max-width: 900px;
+  width: 92%;
+  max-height: 85vh;
+  overflow-y: auto;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+}
+
+.drilldown-modal h3 {
+  color: var(--color-accent);
+  margin-bottom: 4px;
+}
+
+.drilldown-modal .drilldown-subtitle {
+  color: var(--text-secondary);
+  font-size: 13px;
+  margin-bottom: 16px;
+}
+
+.drilldown-modal .drilldown-close {
+  background: var(--bg-secondary);
+  border: 1px solid var(--color-border);
+  color: var(--text-primary);
+  padding: 8px 20px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 13px;
+  margin-top: 16px;
+  transition: all 0.2s;
+}
+
+.drilldown-modal .drilldown-close:hover {
+  background: var(--bg-hover);
+  border-color: var(--color-accent);
+}
+
+/* Tablet */
+@media (max-width: 1024px) {
   .chart-box { min-width: 100%; }
-  .stat-cards { grid-template-columns: repeat(3, 1fr); }
-  .app-header { grid-template-columns: 1fr; justify-items: center; }
-  .app-header .header-logo { height: 36px; }
+  .filter-bar { gap: 8px; }
+  .filter-bar select, .search-input { font-size: 12px; padding: 6px 10px; }
+  .search-input { min-width: 180px; }
+  .dim-filters select { max-width: 140px; }
+  .stat-cards { grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .drilldown-modal { width: 96%; padding: 16px; }
+  .methodology-modal { width: 95%; padding: 24px; }
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+  .app { padding: 0 10px; }
+  .app-header { grid-template-columns: 1fr; justify-items: center; gap: 8px; padding: 12px 0 8px; }
+  .app-header .header-logo { height: 32px; }
+  .app-header h1 { font-size: 20px; }
+  .app-header .subtitle { font-size: 12px; }
+  .tab-nav { gap: 0; }
+  .tab-btn { padding: 10px 12px; font-size: 12px; }
+  .stat-cards { grid-template-columns: repeat(2, 1fr); gap: 6px; }
+  .stat-val { font-size: 20px; }
+  .stat-label { font-size: 10px; }
+  .chart-box { min-width: 100%; padding: 8px; }
+  .chart-title-bar h4 { font-size: 12px; }
+  .filter-bar { gap: 6px; }
+  .filter-bar select, .search-input { font-size: 11px; padding: 5px 8px; }
+  .search-input { min-width: 100%; }
+  .dim-filters select { max-width: 120px; }
+  .stmt-text { font-size: 12px; max-height: 80px; }
+  .stmt-meta { font-size: 11px; gap: 6px; }
+  .tag { font-size: 10px; padding: 1px 6px; }
+  .drilldown-modal { width: 98%; max-height: 90vh; padding: 12px; max-width: 100%; }
+  .drilldown-modal h3 { font-size: 16px; }
+  .methodology-modal { width: 98%; padding: 16px; max-width: 100%; }
+  .chart-info-modal { width: 95%; }
+  .pagination button { padding: 6px 14px; font-size: 12px; }
+  footer { font-size: 11px; padding: 20px 0; }
+}
+
+/* Small mobile */
+@media (max-width: 480px) {
+  .stat-cards { grid-template-columns: 1fr 1fr; }
+  .tab-btn { padding: 8px 8px; font-size: 11px; }
+  .app-header h1 { font-size: 18px; }
+  .confidence-slider input[type="range"] { width: 60px; }
 }

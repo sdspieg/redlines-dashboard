@@ -658,7 +658,6 @@ export default function Overview() {
       })()}
 
       {/* Corpus Timelines */}
-      {docsMonthly.length > 0 && docsMonthlyBySource.length > 0 && (
       <div className="chart-row">
         <div className="chart-box">
           <div className="chart-title-bar">
@@ -768,9 +767,7 @@ export default function Overview() {
           </div>
         </div>
       </div>
-      )}
 
-      {chunksMonthly.length > 0 && chunksMonthlyBySource.length > 0 && (
       <div className="chart-row">
         <div className="chart-box">
           <div className="chart-title-bar">
@@ -859,7 +856,6 @@ export default function Overview() {
           </div>
         </div>
       </div>
-      )}
 
       {drilldown && (
         <StatementDrilldown

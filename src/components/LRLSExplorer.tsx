@@ -140,6 +140,17 @@ export default function LRLSExplorer() {
           <div className="chart-title-bar">
             <h4>LRLS Matches Over Time — {viewMode === 'absolute' ? 'Absolute Counts' : 'Relative Rate (%)'}</h4>
             <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+              <div style={{
+                padding: '6px 12px',
+                background: '#0a1929',
+                border: '1px solid #3a5a8a',
+                borderRadius: '4px',
+                color: '#ff7f0e',
+                fontSize: '13px',
+                fontWeight: 'bold'
+              }}>
+                Total: {filteredMatches.length} {sourceFilter !== 'all' && `(${sourceFilter === 'kremlin' ? 'Kremlin' : sourceFilter === 'duma' ? 'Duma' : sourceFilter === 'federation' ? 'Fed. Council' : 'Telegram'})`}
+              </div>
               <select
                 value={sourceFilter}
                 onChange={e => setSourceFilter(e.target.value)}

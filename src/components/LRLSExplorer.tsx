@@ -246,6 +246,22 @@ export default function LRLSExplorer() {
             config={{ displayModeBar: false, responsive: true }}
             style={{ width: '100%' }}
           />
+          <div style={{
+            marginTop: '10px',
+            padding: '8px 12px',
+            background: 'rgba(255, 127, 14, 0.1)',
+            border: '1px solid #ff7f0e',
+            borderRadius: '4px',
+            color: '#e0e0e0',
+            fontSize: '14px',
+            textAlign: 'center'
+          }}>
+            <strong>Total LRLS Matches: {filteredMatches.length}</strong>
+            {sourceFilter !== 'all' && ` (${sourceFilter === 'kremlin' ? 'Kremlin' :
+              sourceFilter === 'duma' ? 'State Duma' :
+              sourceFilter === 'federation' ? 'Federation Council' :
+              'Official Telegram'})`}
+          </div>
         </div>
       </div>
 

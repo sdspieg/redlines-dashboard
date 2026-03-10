@@ -8,6 +8,7 @@ import StatementDrilldown from './StatementDrilldown';
 export default function Overview() {
   const [stats, setStats] = useState<OverviewStats | null>(null);
   const [chunks, setChunks] = useState<SourceRow[]>([]);
+  const [chunksMonthly, setChunksMonthly] = useState<{ month: string; total_chunks: number }[]>([]);
   const [rrls, setRrls] = useState<SourceRow[]>([]);
   const [nts, setNts] = useState<SourceRow[]>([]);
   const [comp, setComp] = useState<ComparativeRow[]>([]);
@@ -15,15 +16,23 @@ export default function Overview() {
   const [rrlsStmts, setRrlsStmts] = useState<RRLSStatement[]>([]);
   const [ntsStmts, setNtsStmts] = useState<NTSStatement[]>([]);
   const [drilldown, setDrilldown] = useState<{ title: string; stmts: (RRLSStatement | NTSStatement)[]; mode: 'rrls' | 'nts' } | null>(null);
+  const [docsMonthly, setDocsMonthly] = useState<{ month: string; count: number }[]>([]);
+  const [docsMonthlyBySource, setDocsMonthlyBySource] = useState<{ month: string; source_category: string; count: number }[]>([]);
+  const [chunksMonthlyBySource, setChunksMonthlyBySource] = useState<{ month: string; source_category: string; count: number }[]>([]);
+  const [sourceFilter, setSourceFilter] = useState('all');
 
   useEffect(() => {
     load<OverviewStats>('overview_stats.json').then(setStats);
     load<SourceRow[]>('chunks_by_source.json').then(setChunks);
+    load<{ month: string; total_chunks: number }[]>('chunks_monthly.json').then(setChunksMonthly);
     load<SourceRow[]>('rrls_by_source.json').then(setRrls);
     load<SourceRow[]>('nts_by_source.json').then(setNts);
     load<ComparativeRow[]>('comparative_by_db.json').then(setComp);
     load<RRLSStatement[]>('rrls_statements.json').then(setRrlsStmts);
     load<NTSStatement[]>('nts_statements.json').then(setNtsStmts);
+    load<{ month: string; count: number }[]>('documents_monthly.json').then(setDocsMonthly);
+    load<{ month: string; source_category: string; count: number }[]>('documents_monthly_by_source.json').then(setDocsMonthlyBySource);
+    load<{ month: string; source_category: string; count: number }[]>('chunks_monthly_by_source.json').then(setChunksMonthlyBySource);
   }, []);
 
   if (!stats) return <div className="loading">Loading...</div>;
@@ -488,6 +497,331 @@ export default function Overview() {
             }}
             style={{ width: '100%', cursor: 'pointer' }}
           />
+        </div>
+      </div>
+
+      {/* Corpus timelines */}
+      {(() => {
+        // Aggregate data based on source filter
+        const filteredDocs = sourceFilter === 'all' ? docsMonthly :
+          docsMonthlyBySource.filter(d => d.source_category === sourceFilter);
+
+        const filteredChunks = sourceFilter === 'all' ?
+          chunksMonthlyBySource.reduce((acc: { month: string; count: number }[], curr) => {
+            const existing = acc.find(a => a.month === curr.month);
+            if (existing) {
+              existing.count += curr.count;
+            } else {
+              acc.push({ month: curr.month, count: curr.count });
+            }
+            return acc;
+          }, []) :
+          chunksMonthlyBySource.filter(c => c.source_category === sourceFilter)
+            .map(c => ({ month: c.month, count: c.count }));
+
+        // Get unique months
+        const months = [...new Set([
+          ...filteredDocs.map((d: any) => d.month),
+          ...filteredChunks.map(c => c.month)
+        ])].sort();
+
+        // Create month-to-count maps
+        const docsByMonth: Record<string, number> = {};
+        const chunksByMonthTimeline: Record<string, number> = {};
+
+        if (sourceFilter === 'all') {
+          docsMonthly.forEach(d => { docsByMonth[d.month] = d.count; });
+        } else {
+          filteredDocs.forEach((d: any) => {
+            docsByMonth[d.month] = (docsByMonth[d.month] || 0) + d.count;
+          });
+        }
+
+        filteredChunks.forEach(c => {
+          chunksByMonthTimeline[c.month] = (chunksByMonthTimeline[c.month] || 0) + c.count;
+        });
+
+        const totalDocs = Object.values(docsByMonth).reduce((a, b) => a + b, 0);
+        const totalChunks = Object.values(chunksByMonthTimeline).reduce((a, b) => a + b, 0);
+
+        return (
+          <div className="chart-row">
+            <div className="chart-box">
+              <div className="chart-title-bar">
+                <h4>Documents Over Time</h4>
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                  <div style={{
+                    padding: '6px 12px',
+                    background: '#0a1929',
+                    border: '1px solid #3a5a8a',
+                    borderRadius: '4px',
+                    color: '#4fc3f7',
+                    fontSize: '13px',
+                    fontWeight: 'bold'
+                  }}>
+                    Total: {totalDocs.toLocaleString()} docs
+                  </div>
+                  <select
+                    value={sourceFilter}
+                    onChange={e => setSourceFilter(e.target.value)}
+                    style={{
+                      padding: '4px 10px',
+                      background: '#1e2a45',
+                      border: '1px solid #3a5a8a',
+                      color: '#e0e0e0',
+                      borderRadius: '4px',
+                      fontSize: '12px',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    <option value="all">All Sources</option>
+                    <option value="kremlin">Kremlin</option>
+                    <option value="duma">State Duma</option>
+                    <option value="federation">Federation Council</option>
+                    <option value="telegram">Official Telegram</option>
+                  </select>
+                  <ChartInfo
+                    title="Documents Over Time"
+                    description="Monthly count of documents in the corpus, filterable by institutional source. Shows the growth and coverage of the database over time."
+                  />
+                </div>
+              </div>
+              <Plot
+                data={[{
+                  type: 'scatter',
+                  mode: 'lines',
+                  x: months,
+                  y: months.map(m => docsByMonth[m] || 0),
+                  line: { color: '#4fc3f7', width: 2 },
+                  fill: 'tozeroy',
+                  fillcolor: 'rgba(79, 195, 247, 0.1)',
+                }]}
+                layout={{
+                  paper_bgcolor: 'transparent',
+                  plot_bgcolor: 'transparent',
+                  font: { color: '#e0e0e0' },
+                  margin: { t: 10, b: 40, l: 60, r: 20 },
+                  height: 300,
+                  xaxis: { title: 'Month' },
+                  yaxis: { title: 'Documents' },
+                }}
+                config={{ displayModeBar: false, responsive: true }}
+                style={{ width: '100%' }}
+              />
+            </div>
+            <div className="chart-box">
+              <div className="chart-title-bar">
+                <h4>Text Chunks Over Time</h4>
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                  <div style={{
+                    padding: '6px 12px',
+                    background: '#0a1929',
+                    border: '1px solid #3a5a8a',
+                    borderRadius: '4px',
+                    color: '#2ca02c',
+                    fontSize: '13px',
+                    fontWeight: 'bold'
+                  }}>
+                    Total: {totalChunks.toLocaleString()} chunks
+                  </div>
+                  <ChartInfo
+                    title="Text Chunks Over Time"
+                    description="Monthly count of text chunks (semantic units) processed by the annotation pipeline. Filtered by the same source selection as documents."
+                  />
+                </div>
+              </div>
+              <Plot
+                data={[{
+                  type: 'scatter',
+                  mode: 'lines',
+                  x: months,
+                  y: months.map(m => chunksByMonthTimeline[m] || 0),
+                  line: { color: '#2ca02c', width: 2 },
+                  fill: 'tozeroy',
+                  fillcolor: 'rgba(44, 160, 44, 0.1)',
+                }]}
+                layout={{
+                  paper_bgcolor: 'transparent',
+                  plot_bgcolor: 'transparent',
+                  font: { color: '#e0e0e0' },
+                  margin: { t: 10, b: 40, l: 60, r: 20 },
+                  height: 300,
+                  xaxis: { title: 'Month' },
+                  yaxis: { title: 'Chunks' },
+                }}
+                config={{ displayModeBar: false, responsive: true }}
+                style={{ width: '100%' }}
+              />
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* Corpus Timelines */}
+      <div className="chart-row">
+        <div className="chart-box">
+          <div className="chart-title-bar">
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+              <h4>Corpus Documents Timeline</h4>
+              <select
+                value={sourceFilter}
+                onChange={e => setSourceFilter(e.target.value)}
+                style={{
+                  background: '#1a1a2e',
+                  color: '#e0e0e0',
+                  border: '1px solid #333',
+                  borderRadius: '4px',
+                  padding: '4px 8px',
+                  fontSize: '0.9rem',
+                  marginLeft: 'auto'
+                }}
+              >
+                <option value="all">All Sources</option>
+                <option value="kremlin">Kremlin</option>
+                <option value="duma">State Duma</option>
+                <option value="federation">Federation Council</option>
+                <option value="telegram">Official Telegram</option>
+              </select>
+              <ChartInfo
+                title="Document Timeline"
+                description="Monthly count of documents in the Red Lines corpus, filtered by source."
+              />
+            </div>
+          </div>
+          <Plot
+            data={[
+              {
+                type: 'scatter',
+                mode: 'lines+markers',
+                name: 'Documents',
+                x: docsMonthly.map(d => d.month),
+                y: docsMonthly.map(d => {
+                  if (sourceFilter === 'all') return d.count;
+                  const filtered = docsMonthlyBySource.filter(r =>
+                    r.month === d.month &&
+                    ((sourceFilter === 'kremlin' && r.source_category === 'kremlin') ||
+                     (sourceFilter === 'duma' && r.source_category === 'duma') ||
+                     (sourceFilter === 'federation' && r.source_category === 'federation') ||
+                     (sourceFilter === 'telegram' && r.source_category === 'telegram'))
+                  );
+                  return filtered.reduce((sum, r) => sum + r.count, 0);
+                }),
+                line: { color: '#1976d2', width: 2 },
+                marker: { color: '#1976d2', size: 4 }
+              }
+            ]}
+            layout={{
+              paper_bgcolor: 'transparent',
+              plot_bgcolor: 'transparent',
+              font: { color: '#e0e0e0' },
+              margin: { t: 10, b: 40, l: 60, r: 20 },
+              height: 300,
+              xaxis: { title: 'Month' },
+              yaxis: { title: 'Documents' }
+            }}
+            config={{ displayModeBar: false, responsive: true }}
+            style={{ width: '100%' }}
+          />
+          <div style={{
+            marginTop: '10px',
+            padding: '8px 12px',
+            background: 'rgba(25, 118, 210, 0.1)',
+            border: '1px solid #1976d2',
+            borderRadius: '4px',
+            color: '#e0e0e0',
+            fontSize: '14px',
+            textAlign: 'center'
+          }}>
+            <strong>Total Documents: {
+              sourceFilter === 'all'
+                ? docsMonthly.reduce((sum, d) => sum + d.count, 0)
+                : docsMonthlyBySource
+                    .filter(r =>
+                      (sourceFilter === 'kremlin' && r.source_category === 'kremlin') ||
+                      (sourceFilter === 'duma' && r.source_category === 'duma') ||
+                      (sourceFilter === 'federation' && r.source_category === 'federation') ||
+                      (sourceFilter === 'telegram' && r.source_category === 'telegram')
+                    )
+                    .reduce((sum, r) => sum + r.count, 0)
+            }</strong>
+            {sourceFilter !== 'all' && ` (${sourceFilter === 'kremlin' ? 'Kremlin' :
+              sourceFilter === 'duma' ? 'State Duma' :
+              sourceFilter === 'federation' ? 'Federation Council' :
+              'Official Telegram'})`}
+          </div>
+        </div>
+      </div>
+
+      <div className="chart-row">
+        <div className="chart-box">
+          <div className="chart-title-bar">
+            <h4>Corpus Chunks Timeline</h4>
+            <ChartInfo
+              title="Chunk Timeline"
+              description="Monthly count of text chunks in the Red Lines corpus, filtered by source."
+            />
+          </div>
+          <Plot
+            data={[
+              {
+                type: 'scatter',
+                mode: 'lines+markers',
+                name: 'Chunks',
+                x: chunksMonthly.map(c => c.month),
+                y: chunksMonthly.map(c => {
+                  if (sourceFilter === 'all') return c.total_chunks;
+                  const filtered = chunksMonthlyBySource.filter(r =>
+                    r.month === c.month &&
+                    ((sourceFilter === 'kremlin' && r.source_category === 'kremlin') ||
+                     (sourceFilter === 'duma' && r.source_category === 'duma') ||
+                     (sourceFilter === 'federation' && r.source_category === 'federation') ||
+                     (sourceFilter === 'telegram' && r.source_category === 'telegram'))
+                  );
+                  return filtered.reduce((sum, r) => sum + r.count, 0);
+                }),
+                line: { color: '#388e3c', width: 2 },
+                marker: { color: '#388e3c', size: 4 }
+              }
+            ]}
+            layout={{
+              paper_bgcolor: 'transparent',
+              plot_bgcolor: 'transparent',
+              font: { color: '#e0e0e0' },
+              margin: { t: 10, b: 40, l: 60, r: 20 },
+              height: 300,
+              xaxis: { title: 'Month' },
+              yaxis: { title: 'Chunks' }
+            }}
+            config={{ displayModeBar: false, responsive: true }}
+            style={{ width: '100%' }}
+          />
+          <div style={{
+            marginTop: '10px',
+            padding: '8px 12px',
+            background: 'rgba(56, 142, 60, 0.1)',
+            border: '1px solid #388e3c',
+            borderRadius: '4px',
+            color: '#e0e0e0',
+            fontSize: '14px',
+            textAlign: 'center'
+          }}>
+            <strong>Total Chunks: {
+              sourceFilter === 'all'
+                ? chunksMonthly.reduce((sum, c) => sum + c.total_chunks, 0)
+                : chunksMonthlyBySource
+                    .filter(r =>
+                      (sourceFilter === 'kremlin' && r.source_category === 'kremlin') ||
+                      (sourceFilter === 'duma' && r.source_category === 'duma') ||
+                      (sourceFilter === 'federation' && r.source_category === 'federation') ||
+                      (sourceFilter === 'telegram' && r.source_category === 'telegram')
+                    )
+                    .reduce((sum, r) => sum + r.count, 0)
+            }</strong>
+            {sourceFilter !== 'all' && ` (${sourceFilter === 'kremlin' ? 'Kremlin' :
+              sourceFilter === 'duma' ? 'State Duma' :
+              sourceFilter === 'federation' ? 'Federation Council' :
+              'Official Telegram'})`}
+          </div>
         </div>
       </div>
 

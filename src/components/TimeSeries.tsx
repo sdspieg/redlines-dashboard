@@ -16,6 +16,8 @@ export default function TimeSeries() {
   const [rrlsStmts, setRrlsStmts] = useState<RRLSStatement[]>([]);
   const [ntsStmts, setNtsStmts] = useState<NTSStatement[]>([]);
   const [drilldown, setDrilldown] = useState<{ title: string; stmts: (RRLSStatement | NTSStatement)[]; mode: 'rrls' | 'nts' } | null>(null);
+  const [viewMode, setViewMode] = useState<'absolute' | 'relative'>('absolute');
+  const [sourceFilter, setSourceFilter] = useState('all');
 
   useEffect(() => {
     load<MonthlyRow[]>('rrls_monthly.json').then(setRrls);
@@ -30,7 +32,21 @@ export default function TimeSeries() {
 
   const agg = (data: MonthlyRow[]) => {
     const m: Record<string, number> = {};
-    for (const r of data) m[r.month] = (m[r.month] || 0) + r.count;
+    const filtered = sourceFilter === 'all' ? data : data.filter(r => {
+      if (sourceFilter === 'kremlin') return r.source === 'kremlin.ru';
+      if (sourceFilter === 'duma') return r.source === 'duma.gov.ru';
+      if (sourceFilter === 'federation') return r.source === 'council.gov.ru';
+      if (sourceFilter === 'telegram') {
+        // Check various Telegram sources
+        return r.source?.includes('МИД') || r.source?.includes('Marina') ||
+               r.source?.includes('Захарова') || r.source?.includes('Медин') ||
+               r.source?.includes('Embassy') || r.source?.includes('Миноборон') ||
+               r.source?.includes('Мэр') || r.source?.includes('Володин') ||
+               r.source?.includes('Русский') || r.source?.includes('Минстрой');
+      }
+      return true;
+    });
+    for (const r of filtered) m[r.month] = (m[r.month] || 0) + r.count;
     return m;
   };
   const rrlsM = agg(rrls);
@@ -59,17 +75,77 @@ export default function TimeSeries() {
       <div className="chart-row">
         <div className="chart-box">
           <div className="chart-title-bar">
-            <h4>All Statement Types Over Time — Absolute Counts</h4>
-            <ChartInfo
-              title="Absolute Statement Counts"
-              description="Line chart showing absolute monthly counts for all three statement types (RRLS, NTS, CRLS). Useful for identifying spikes in red line rhetoric correlated with geopolitical events."
-            />
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+              <h4>All Statement Types Over Time</h4>
+              <div style={{ display: 'flex', gap: '0.5rem', marginLeft: 'auto' }}>
+                <select
+                  value={sourceFilter}
+                  onChange={e => setSourceFilter(e.target.value)}
+                  style={{
+                    background: '#1a1a2e',
+                    color: '#e0e0e0',
+                    border: '1px solid #333',
+                    borderRadius: '4px',
+                    padding: '4px 8px',
+                    fontSize: '0.9rem'
+                  }}
+                >
+                  <option value="all">All Sources</option>
+                  <option value="kremlin">Kremlin</option>
+                  <option value="duma">State Duma</option>
+                  <option value="federation">Federation Council</option>
+                  <option value="telegram">Official Telegram</option>
+                </select>
+                <button
+                  onClick={() => setViewMode(viewMode === 'absolute' ? 'relative' : 'absolute')}
+                  style={{
+                    background: '#1a1a2e',
+                    color: '#e0e0e0',
+                    border: '1px solid #333',
+                    borderRadius: '4px',
+                    padding: '4px 12px',
+                    fontSize: '0.9rem',
+                    cursor: 'pointer'
+                  }}
+                >
+                  {viewMode === 'absolute' ? 'Show Relative' : 'Show Absolute'}
+                </button>
+              </div>
+              <ChartInfo
+                title={viewMode === 'absolute' ? "Absolute Statement Counts" : "Relative Rate"}
+                description={viewMode === 'absolute'
+                  ? "Line chart showing absolute monthly counts for all three statement types (RRLS, NTS, CRLS). Useful for identifying spikes in red line rhetoric correlated with geopolitical events."
+                  : "Shows the proportion of text chunks classified as RRLS, NTS, or CRLS per month. This normalizes for varying corpus size, revealing whether escalatory language is becoming more prevalent independent of how many documents are available."
+                }
+              />
+            </div>
           </div>
           <Plot
             data={[
-              { type: 'scatter', mode: 'lines', name: 'RRLS', x: allMonths, y: allMonths.map(m => rrlsM[m] || 0), line: { color: RRLS_COLOR, width: 2 } },
-              { type: 'scatter', mode: 'lines', name: '\u2622 NTS', x: allMonths, y: allMonths.map(m => ntsM[m] || 0), line: { color: NTS_COLOR, width: 2 } },
-              { type: 'scatter', mode: 'lines', name: 'CRLS', x: allMonths, y: allMonths.map(m => crlsM[m] || 0), line: { color: CRLS_COLOR, width: 2 } },
+              {
+                type: 'scatter',
+                mode: 'lines',
+                name: viewMode === 'absolute' ? 'RRLS' : 'RRLS %',
+                x: allMonths,
+                y: viewMode === 'absolute' ? allMonths.map(m => rrlsM[m] || 0) : rrlsRate,
+                line: { color: RRLS_COLOR, width: 2 }
+              },
+              {
+                type: 'scatter',
+                mode: 'lines',
+                name: viewMode === 'absolute' ? '\u2622 NTS' : '\u2622 NTS %',
+                x: allMonths,
+                y: viewMode === 'absolute' ? allMonths.map(m => ntsM[m] || 0) : ntsRate,
+                line: { color: NTS_COLOR, width: 2 }
+              },
+              {
+                type: 'scatter',
+                mode: 'lines',
+                name: viewMode === 'absolute' ? 'CRLS' : 'CRLS %',
+                x: allMonths,
+                y: viewMode === 'absolute' ? allMonths.map(m => crlsM[m] || 0) : crlsRate,
+                line: { color: CRLS_COLOR, width: 2 }
+              },
             ]}
             layout={{
               paper_bgcolor: 'transparent', plot_bgcolor: 'transparent',
@@ -77,7 +153,11 @@ export default function TimeSeries() {
               margin: { t: 10, b: 40, l: 60, r: 20 },
               height: 350,
               legend: { orientation: 'h', y: 1.1 },
-              xaxis: { title: 'Month' }, yaxis: { title: 'Count' },
+              xaxis: { title: 'Month' },
+              yaxis: {
+                title: viewMode === 'absolute' ? 'Count' : '% of Chunks',
+                ticksuffix: viewMode === 'relative' ? '%' : ''
+              },
             }}
             config={{ displayModeBar: false, responsive: true }}
             onClick={(e: { points: { x: string; data: { name: string } }[] }) => {
@@ -85,7 +165,7 @@ export default function TimeSeries() {
               if (!pt) return;
               const month = pt.x;
               const name = pt.data.name;
-              if (name === 'CRLS') return;
+              if (name.includes('CRLS')) return;
               const isNts = name.includes('NTS');
               const stmts = isNts ? ntsStmts : rrlsStmts;
               const matching = stmts.filter(s => s.date?.startsWith(month));
@@ -93,46 +173,22 @@ export default function TimeSeries() {
             }}
             style={{ width: '100%', cursor: 'pointer' }}
           />
-        </div>
-      </div>
-
-      <div className="chart-row">
-        <div className="chart-box">
-          <div className="chart-title-bar">
-            <h4>Relative Rate — % of Chunks Classified as Statement</h4>
-            <ChartInfo
-              title="Relative Rate"
-              description="Shows the proportion of text chunks classified as RRLS, NTS, or CRLS per month. This normalizes for varying corpus size, revealing whether escalatory language is becoming more prevalent independent of how many documents are available."
-            />
+          <div style={{
+            marginTop: '10px',
+            padding: '8px 12px',
+            background: 'rgba(42, 160, 44, 0.1)',
+            border: '1px solid #2ca02c',
+            borderRadius: '4px',
+            color: '#e0e0e0',
+            fontSize: '14px',
+            textAlign: 'center'
+          }}>
+            <strong>Total Statements: RRLS={Object.values(rrlsM).reduce((a,b) => a+b, 0)}, NTS={Object.values(ntsM).reduce((a,b) => a+b, 0)}, CRLS={Object.values(crlsM).reduce((a,b) => a+b, 0)}</strong>
+            {sourceFilter !== 'all' && ` (${sourceFilter === 'kremlin' ? 'Kremlin' :
+              sourceFilter === 'duma' ? 'State Duma' :
+              sourceFilter === 'federation' ? 'Federation Council' :
+              'Official Telegram'})`}
           </div>
-          <Plot
-            data={[
-              { type: 'scatter', mode: 'lines', name: 'RRLS %', x: allMonths, y: rrlsRate, line: { color: RRLS_COLOR, width: 2 } },
-              { type: 'scatter', mode: 'lines', name: '\u2622 NTS %', x: allMonths, y: ntsRate, line: { color: NTS_COLOR, width: 2 } },
-              { type: 'scatter', mode: 'lines', name: 'CRLS %', x: allMonths, y: crlsRate, line: { color: CRLS_COLOR, width: 2 } },
-            ]}
-            layout={{
-              paper_bgcolor: 'transparent', plot_bgcolor: 'transparent',
-              font: { color: '#e0e0e0' },
-              margin: { t: 10, b: 40, l: 60, r: 20 },
-              height: 300,
-              legend: { orientation: 'h', y: 1.1 },
-              xaxis: { title: 'Month' }, yaxis: { title: '% of Chunks', ticksuffix: '%' },
-            }}
-            config={{ displayModeBar: false, responsive: true }}
-            onClick={(e: { points: { x: string; data: { name: string } }[] }) => {
-              const pt = e.points?.[0];
-              if (!pt) return;
-              const month = pt.x;
-              const name = pt.data.name;
-              if (name === 'CRLS %') return;
-              const isNts = name.includes('NTS');
-              const stmts = isNts ? ntsStmts : rrlsStmts;
-              const matching = stmts.filter(s => s.date?.startsWith(month));
-              setDrilldown({ title: `${name} (${month})`, stmts: matching, mode: isNts ? 'nts' : 'rrls' });
-            }}
-            style={{ width: '100%', cursor: 'pointer' }}
-          />
         </div>
       </div>
 

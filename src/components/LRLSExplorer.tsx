@@ -24,6 +24,7 @@ export default function LRLSExplorer() {
   const [langFilter, setLangFilter] = useState('all');
   const [page, setPage] = useState(0);
   const [viewMode, setViewMode] = useState<'absolute' | 'relative'>('absolute');
+  const [sourceFilter, setSourceFilter] = useState('all');
 
   useEffect(() => {
     load<LRLSStats>('lrls_stats.json').then(setStats);
@@ -35,9 +36,33 @@ export default function LRLSExplorer() {
     load<{ month: string; total_chunks: number }[]>('chunks_monthly.json').then(setChunks);
   }, []);
 
-  // Monthly aggregation per language
-  const langs = [...new Set(monthly.map(r => r.lang))].sort();
-  const months = [...new Set(monthly.map(r => r.month))].sort();
+  // Filter matches by source for timeline
+  const filteredMatches = sourceFilter === 'all' ? matches : matches.filter(m => {
+    if (sourceFilter === 'duma') return m.source === 'duma.gov.ru';
+    if (sourceFilter === 'mid') return m.source === 'МИД России 🇷🇺';
+    if (sourceFilter === 'kremlin') return m.source === 'kremlin.ru';
+    if (sourceFilter === 'marina') return m.source === 'Marina Akhmedova';
+    return true;
+  });
+
+  // Recompute monthly data based on filtered matches
+  const monthlyFiltered: Record<string, Record<string, number>> = {};
+  filteredMatches.forEach(m => {
+    if (!m.date) return;
+    const month = m.date.substring(0, 7); // YYYY-MM
+    if (!monthlyFiltered[month]) monthlyFiltered[month] = {};
+    if (!monthlyFiltered[month][m.lang]) monthlyFiltered[month][m.lang] = 0;
+    monthlyFiltered[month][m.lang]++;
+  });
+
+  // Get langs and months from filtered data
+  const langs = sourceFilter === 'all'
+    ? [...new Set(monthly.map(r => r.lang))].sort()
+    : [...new Set(filteredMatches.map(m => m.lang))].sort();
+
+  const months = sourceFilter === 'all'
+    ? [...new Set(monthly.map(r => r.month))].sort()
+    : [...new Set(Object.keys(monthlyFiltered))].sort();
 
   // Create chunks map for easy lookup
   const chunksMap: Record<string, number> = {};
@@ -114,7 +139,26 @@ export default function LRLSExplorer() {
         <div className="chart-box" style={{ minWidth: '100%' }}>
           <div className="chart-title-bar">
             <h4>LRLS Matches Over Time — {viewMode === 'absolute' ? 'Absolute Counts' : 'Relative Rate (%)'}</h4>
-            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+              <select
+                value={sourceFilter}
+                onChange={e => setSourceFilter(e.target.value)}
+                style={{
+                  padding: '4px 10px',
+                  background: '#1e2a45',
+                  border: '1px solid #3a5a8a',
+                  color: '#e0e0e0',
+                  borderRadius: '4px',
+                  fontSize: '12px',
+                  cursor: 'pointer'
+                }}
+              >
+                <option value="all">All Sources</option>
+                <option value="duma">State Duma</option>
+                <option value="mid">MID Russia</option>
+                <option value="kremlin">Kremlin</option>
+                <option value="marina">Marina Akhmedova</option>
+              </select>
               <button
                 onClick={() => setViewMode('absolute')}
                 style={{
@@ -159,8 +203,13 @@ export default function LRLSExplorer() {
               name: LANG_LABELS[lang] ?? lang,
               x: months,
               y: months.map(m => {
-                const row = monthly.find(r => r.month === m && r.lang === lang);
-                const count = row ? row.count : 0;
+                let count = 0;
+                if (sourceFilter === 'all') {
+                  const row = monthly.find(r => r.month === m && r.lang === lang);
+                  count = row ? row.count : 0;
+                } else {
+                  count = (monthlyFiltered[m] && monthlyFiltered[m][lang]) || 0;
+                }
                 if (viewMode === 'absolute') {
                   return count;
                 } else {

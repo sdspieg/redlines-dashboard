@@ -2,10 +2,10 @@ import type { TabId } from '../types';
 
 const TABS: { id: TabId; label: string; color: string }[] = [
   { id: 'overview', label: 'Overview', color: '#a0a0b0' },
-  { id: 'rrls', label: 'RRLS Explorer', color: '#d32f2f' },
-  { id: 'nts', label: '\u2622 NTS Explorer', color: '#fdd835' },
+  { id: 'rrls', label: 'RRLS', color: '#d32f2f' },
+  { id: 'nts', label: '\u2622 NTS', color: '#fdd835' },
   { id: 'crls', label: 'CRLS', color: '#d62728' },
-  { id: 'lrls', label: 'Literal Red Lines', color: '#ff7f0e' },
+  { id: 'lrls', label: 'LRLS', color: '#ff7f0e' },
   { id: 'timeseries', label: 'Time Series', color: '#2ca02c' },
   { id: 'statements', label: 'Statement Browser', color: '#9467bd' },
   { id: 'analytics', label: 'Causal Analytics', color: '#4fc3f7' },

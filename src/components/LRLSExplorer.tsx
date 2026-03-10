@@ -18,10 +18,12 @@ export default function LRLSExplorer() {
   const [bySource, setBySource] = useState<LRLSSourceRow[]>([]);
   const [topPhrases, setTopPhrases] = useState<LRLSPhraseRow[]>([]);
   const [matches, setMatches] = useState<LRLSMatch[]>([]);
+  const [chunks, setChunks] = useState<{ month: string; total_chunks: number }[]>([]);
 
   const [search, setSearch] = useState('');
   const [langFilter, setLangFilter] = useState('all');
   const [page, setPage] = useState(0);
+  const [viewMode, setViewMode] = useState<'absolute' | 'relative'>('absolute');
 
   useEffect(() => {
     load<LRLSStats>('lrls_stats.json').then(setStats);
@@ -30,11 +32,16 @@ export default function LRLSExplorer() {
     load<LRLSSourceRow[]>('lrls_by_source.json').then(setBySource);
     load<LRLSPhraseRow[]>('lrls_top_phrases.json').then(setTopPhrases);
     load<LRLSMatch[]>('lrls_matches.json').then(setMatches);
+    load<{ month: string; total_chunks: number }[]>('chunks_monthly.json').then(setChunks);
   }, []);
 
   // Monthly aggregation per language
   const langs = [...new Set(monthly.map(r => r.lang))].sort();
   const months = [...new Set(monthly.map(r => r.month))].sort();
+
+  // Create chunks map for easy lookup
+  const chunksMap: Record<string, number> = {};
+  chunks.forEach(c => { chunksMap[c.month] = c.total_chunks; });
 
   // Filter matches for browser
   const filtered = matches.filter(m => {
@@ -72,7 +79,7 @@ export default function LRLSExplorer() {
         and English (<em>red line(s)</em>) source texts.
       </p>
 
-      {/* ── Stat cards ── */}
+      {/* Stat cards */}
       {stats && (
         <div className="stat-cards">
           <div className="stat-card">
@@ -102,7 +109,87 @@ export default function LRLSExplorer() {
         </div>
       )}
 
-      {/* ── Language breakdown + Top phrases ── */}
+      {/* Monthly trend with toggle */}
+      <div className="chart-row">
+        <div className="chart-box" style={{ minWidth: '100%' }}>
+          <div className="chart-title-bar">
+            <h4>LRLS Matches Over Time — {viewMode === 'absolute' ? 'Absolute Counts' : 'Relative Rate (%)'}</h4>
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+              <button
+                onClick={() => setViewMode('absolute')}
+                style={{
+                  padding: '4px 12px',
+                  background: viewMode === 'absolute' ? '#2a5599' : '#1e2a45',
+                  border: '1px solid #3a5a8a',
+                  color: '#e0e0e0',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  fontSize: '12px'
+                }}
+              >
+                Absolute
+              </button>
+              <button
+                onClick={() => setViewMode('relative')}
+                style={{
+                  padding: '4px 12px',
+                  background: viewMode === 'relative' ? '#2a5599' : '#1e2a45',
+                  border: '1px solid #3a5a8a',
+                  color: '#e0e0e0',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  fontSize: '12px'
+                }}
+              >
+                Relative %
+              </button>
+              <ChartInfo
+                title={viewMode === 'absolute' ? "Absolute LRLS Counts" : "Relative LRLS Rate"}
+                description={viewMode === 'absolute'
+                  ? "Monthly count of literal 'red lines' phrase mentions, split by language. Shows raw frequencies over time."
+                  : "Percentage of chunks containing literal 'red lines' phrases per month. Normalizes for varying corpus size to reveal whether red lines rhetoric is becoming more prevalent."
+                }
+              />
+            </div>
+          </div>
+          <Plot
+            data={langs.map(lang => ({
+              type: 'scatter' as const,
+              mode: 'lines+markers' as const,
+              name: LANG_LABELS[lang] ?? lang,
+              x: months,
+              y: months.map(m => {
+                const row = monthly.find(r => r.month === m && r.lang === lang);
+                const count = row ? row.count : 0;
+                if (viewMode === 'absolute') {
+                  return count;
+                } else {
+                  const totalChunks = chunksMap[m] || 1;
+                  return (count / totalChunks) * 100;
+                }
+              }),
+              line: { color: LANG_COLORS[lang] ?? '#aaa', width: 2 },
+              marker: { color: LANG_COLORS[lang] ?? '#aaa', size: 4 },
+            }))}
+            layout={{
+              paper_bgcolor: 'transparent', plot_bgcolor: 'transparent',
+              font: { color: '#e0e0e0' },
+              margin: { t: 10, b: 40, l: 60, r: 20 },
+              height: 350,
+              xaxis: { title: 'Month' },
+              yaxis: {
+                title: viewMode === 'absolute' ? 'Matches' : '% of Chunks',
+                ticksuffix: viewMode === 'relative' ? '%' : ''
+              },
+              legend: { orientation: 'h', y: 1.12 },
+            }}
+            config={{ displayModeBar: false, responsive: true }}
+            style={{ width: '100%' }}
+          />
+        </div>
+      </div>
+
+      {/* Language breakdown */}
       <div className="chart-row">
         <div className="chart-box" style={{ flex: '0 0 320px' }}>
           <div className="chart-title-bar">
@@ -137,80 +224,8 @@ export default function LRLSExplorer() {
           />
         </div>
 
+        {/* Source breakdown */}
         <div className="chart-box" style={{ flex: 1 }}>
-          <div className="chart-title-bar">
-            <h4>Top Matched Phrases</h4>
-            <ChartInfo
-              title="Top Matched Phrases"
-              description="Most frequently matched surface forms of 'red lines' across all languages. Russian inflected forms dominate due to grammatical case variation."
-            />
-          </div>
-          <Plot
-            data={[{
-              type: 'bar',
-              orientation: 'h',
-              x: topPhrases.slice(0, 20).map(r => r.count),
-              y: topPhrases.slice(0, 20).map(r => r.matched_phrase),
-              marker: { color: topPhrases.slice(0, 20).map(r => LANG_COLORS[r.lang] ?? '#aaa') },
-              text: topPhrases.slice(0, 20).map(r => r.count.toString()),
-              textposition: 'outside',
-              hovertemplate: '%{y}: %{x} matches<extra></extra>',
-            }]}
-            layout={{
-              paper_bgcolor: 'transparent', plot_bgcolor: 'transparent',
-              font: { color: '#e0e0e0' },
-              margin: { t: 10, b: 20, l: 220, r: 60 },
-              height: 520,
-              yaxis: { autorange: 'reversed' },
-              xaxis: { title: 'Count' },
-            }}
-            config={{ displayModeBar: false, responsive: true }}
-            style={{ width: '100%' }}
-          />
-        </div>
-      </div>
-
-      {/* ── Monthly trend ── */}
-      <div className="chart-row">
-        <div className="chart-box" style={{ minWidth: '100%' }}>
-          <div className="chart-title-bar">
-            <h4>LRLS Matches Over Time</h4>
-            <ChartInfo
-              title="LRLS Matches Over Time"
-              description="Monthly count of literal 'red lines' phrase mentions, split by language. Shows when the actual phrase was used in source texts over time."
-            />
-          </div>
-          <Plot
-            data={langs.map(lang => ({
-              type: 'scatter' as const,
-              mode: 'lines+markers' as const,
-              name: LANG_LABELS[lang] ?? lang,
-              x: months,
-              y: months.map(m => {
-                const row = monthly.find(r => r.month === m && r.lang === lang);
-                return row ? row.count : 0;
-              }),
-              line: { color: LANG_COLORS[lang] ?? '#aaa' },
-              marker: { color: LANG_COLORS[lang] ?? '#aaa' },
-            }))}
-            layout={{
-              paper_bgcolor: 'transparent', plot_bgcolor: 'transparent',
-              font: { color: '#e0e0e0' },
-              margin: { t: 10, b: 40, l: 60, r: 20 },
-              height: 300,
-              xaxis: { title: 'Month' },
-              yaxis: { title: 'Matches' },
-              legend: { orientation: 'h', y: 1.12 },
-            }}
-            config={{ displayModeBar: false, responsive: true }}
-            style={{ width: '100%' }}
-          />
-        </div>
-      </div>
-
-      {/* ── Source breakdown ── */}
-      <div className="chart-row">
-        <div className="chart-box" style={{ minWidth: '100%' }}>
           <div className="chart-title-bar">
             <h4>LRLS Matches by Source</h4>
             <ChartInfo
@@ -223,15 +238,15 @@ export default function LRLSExplorer() {
               {
                 type: 'bar',
                 name: 'Russian',
-                x: bySource.map(r => r.source),
-                y: bySource.map(r => r.ru_count),
+                x: bySource.slice(0, 15).map(r => r.source),
+                y: bySource.slice(0, 15).map(r => r.ru_count),
                 marker: { color: LANG_COLORS.ru },
               },
               {
                 type: 'bar',
                 name: 'English',
-                x: bySource.map(r => r.source),
-                y: bySource.map(r => r.en_count),
+                x: bySource.slice(0, 15).map(r => r.source),
+                y: bySource.slice(0, 15).map(r => r.en_count),
                 marker: { color: LANG_COLORS.en },
               },
             ]}
@@ -251,7 +266,7 @@ export default function LRLSExplorer() {
         </div>
       </div>
 
-      {/* ── Match browser ── */}
+      {/* Match browser */}
       <div className="chart-row">
         <div className="chart-box" style={{ minWidth: '100%' }}>
           <div className="chart-title-bar">
@@ -373,6 +388,41 @@ export default function LRLSExplorer() {
               </button>
             </div>
           )}
+        </div>
+      </div>
+
+      {/* Top phrases - moved to bottom */}
+      <div className="chart-row">
+        <div className="chart-box" style={{ minWidth: '100%' }}>
+          <div className="chart-title-bar">
+            <h4>Top Matched Phrases</h4>
+            <ChartInfo
+              title="Top Matched Phrases"
+              description="Most frequently matched surface forms of 'red lines' across all languages. Russian inflected forms dominate due to grammatical case variation."
+            />
+          </div>
+          <Plot
+            data={[{
+              type: 'bar',
+              orientation: 'h',
+              x: topPhrases.slice(0, 20).map(r => r.count),
+              y: topPhrases.slice(0, 20).map(r => r.matched_phrase),
+              marker: { color: topPhrases.slice(0, 20).map(r => LANG_COLORS[r.lang] ?? '#aaa') },
+              text: topPhrases.slice(0, 20).map(r => r.count.toString()),
+              textposition: 'outside',
+              hovertemplate: '%{y}: %{x} matches<extra></extra>',
+            }]}
+            layout={{
+              paper_bgcolor: 'transparent', plot_bgcolor: 'transparent',
+              font: { color: '#e0e0e0' },
+              margin: { t: 10, b: 20, l: 220, r: 60 },
+              height: 520,
+              yaxis: { autorange: 'reversed' },
+              xaxis: { title: 'Count' },
+            }}
+            config={{ displayModeBar: false, responsive: true }}
+            style={{ width: '100%' }}
+          />
         </div>
       </div>
     </div>

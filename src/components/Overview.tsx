@@ -694,18 +694,34 @@ export default function Overview() {
                 type: 'scatter',
                 mode: 'lines+markers',
                 name: 'Documents',
-                x: docsMonthly.map(d => d.month),
-                y: docsMonthly.map(d => {
-                  if (sourceFilter === 'all') return d.count;
-                  const filtered = docsMonthlyBySource.filter(r =>
-                    r.month === d.month &&
-                    ((sourceFilter === 'kremlin' && r.source_category === 'kremlin') ||
-                     (sourceFilter === 'duma' && r.source_category === 'duma') ||
-                     (sourceFilter === 'federation' && r.source_category === 'federation') ||
-                     (sourceFilter === 'telegram' && r.source_category === 'telegram'))
+                x: (() => {
+                  if (sourceFilter === 'all') return docsMonthly.map(d => d.month);
+                  // Get unique months from filtered data
+                  const filteredData = docsMonthlyBySource.filter(r =>
+                    (sourceFilter === 'kremlin' && r.source_category === 'kremlin') ||
+                    (sourceFilter === 'duma' && r.source_category === 'duma') ||
+                    (sourceFilter === 'federation' && r.source_category === 'federation') ||
+                    (sourceFilter === 'telegram' && r.source_category === 'telegram')
                   );
-                  return filtered.reduce((sum, r) => sum + r.count, 0);
-                }),
+                  const monthsSet = new Set(filteredData.map(d => d.month));
+                  return Array.from(monthsSet).sort();
+                })(),
+                y: (() => {
+                  if (sourceFilter === 'all') return docsMonthly.map(d => d.count);
+                  // Get filtered data and group by month
+                  const filteredData = docsMonthlyBySource.filter(r =>
+                    (sourceFilter === 'kremlin' && r.source_category === 'kremlin') ||
+                    (sourceFilter === 'duma' && r.source_category === 'duma') ||
+                    (sourceFilter === 'federation' && r.source_category === 'federation') ||
+                    (sourceFilter === 'telegram' && r.source_category === 'telegram')
+                  );
+                  const monthsSet = new Set(filteredData.map(d => d.month));
+                  const months = Array.from(monthsSet).sort();
+                  return months.map(month => {
+                    const monthData = filteredData.filter(r => r.month === month);
+                    return monthData.reduce((sum, r) => sum + r.count, 0);
+                  });
+                })(),
                 line: { color: '#1976d2', width: 2 },
                 marker: { color: '#1976d2', size: 4 }
               }
@@ -767,18 +783,34 @@ export default function Overview() {
                 type: 'scatter',
                 mode: 'lines+markers',
                 name: 'Chunks',
-                x: chunksMonthly.map(c => c.month),
-                y: chunksMonthly.map(c => {
-                  if (sourceFilter === 'all') return c.total_chunks;
-                  const filtered = chunksMonthlyBySource.filter(r =>
-                    r.month === c.month &&
-                    ((sourceFilter === 'kremlin' && r.source_category === 'kremlin') ||
-                     (sourceFilter === 'duma' && r.source_category === 'duma') ||
-                     (sourceFilter === 'federation' && r.source_category === 'federation') ||
-                     (sourceFilter === 'telegram' && r.source_category === 'telegram'))
+                x: (() => {
+                  if (sourceFilter === 'all') return chunksMonthly.map(c => c.month);
+                  // Get unique months from filtered data
+                  const filteredData = chunksMonthlyBySource.filter(r =>
+                    (sourceFilter === 'kremlin' && r.source_category === 'kremlin') ||
+                    (sourceFilter === 'duma' && r.source_category === 'duma') ||
+                    (sourceFilter === 'federation' && r.source_category === 'federation') ||
+                    (sourceFilter === 'telegram' && r.source_category === 'telegram')
                   );
-                  return filtered.reduce((sum, r) => sum + r.count, 0);
-                }),
+                  const monthsSet = new Set(filteredData.map(d => d.month));
+                  return Array.from(monthsSet).sort();
+                })(),
+                y: (() => {
+                  if (sourceFilter === 'all') return chunksMonthly.map(c => c.total_chunks);
+                  // Get filtered data and group by month
+                  const filteredData = chunksMonthlyBySource.filter(r =>
+                    (sourceFilter === 'kremlin' && r.source_category === 'kremlin') ||
+                    (sourceFilter === 'duma' && r.source_category === 'duma') ||
+                    (sourceFilter === 'federation' && r.source_category === 'federation') ||
+                    (sourceFilter === 'telegram' && r.source_category === 'telegram')
+                  );
+                  const monthsSet = new Set(filteredData.map(d => d.month));
+                  const months = Array.from(monthsSet).sort();
+                  return months.map(month => {
+                    const monthData = filteredData.filter(r => r.month === month);
+                    return monthData.reduce((sum, r) => sum + r.count, 0);
+                  });
+                })(),
                 line: { color: '#388e3c', width: 2 },
                 marker: { color: '#388e3c', size: 4 }
               }

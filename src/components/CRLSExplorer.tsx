@@ -21,7 +21,24 @@ export default function CRLSExplorer() {
     load<MonthlyRow[]>('crls_monthly.json').then(setMonthly);
   }, []);
 
-  const totalTerritory = territories.slice(0, 20).reduce((s, r) => s + r.count, 0);
+  // Normalise territory names: merge variants into canonical forms
+  const normalizeTerritory = (t: string): string => {
+    if (t === 'former Ukraine') return 'Ukraine';
+    if (t === "Luhansk People's Republic (LPR)") return "Luhansk People's Republic (LNR)";
+    return t;
+  };
+  const normalizedTerritories = (() => {
+    const map: Record<string, number> = {};
+    for (const r of territories) {
+      const name = normalizeTerritory(r.territory);
+      map[name] = (map[name] || 0) + r.count;
+    }
+    return Object.entries(map)
+      .map(([territory, count]) => ({ territory, count }))
+      .sort((a, b) => b.count - a.count);
+  })();
+
+  const totalTerritory = normalizedTerritories.slice(0, 20).reduce((s, r) => s + r.count, 0);
 
   // Group small framing types into "Other" (< 3% of total)
   const framingTotal = framing.reduce((s, r) => s + r.count, 0);
@@ -48,7 +65,9 @@ export default function CRLSExplorer() {
   }
   const topSrc = Object.entries(srcCounts).sort((a, b) => b[1] - a[1]).slice(0, 6).map(([s]) => s);
 
-  const totalBySource = bySource.reduce((s, r) => s + (r.crls ?? 0), 0);
+  // Exclude sources with no CRLS (not scalable)
+  const activeBySource = bySource.filter(r => (r.crls ?? 0) > 0);
+  const totalBySource = activeBySource.reduce((s, r) => s + (r.crls ?? 0), 0);
 
   return (
     <div className="tab-content">
@@ -100,11 +119,11 @@ export default function CRLSExplorer() {
           <Plot
             data={[{
               type: 'bar',
-              x: territories.slice(0, 20).map(r => r.count),
-              y: territories.slice(0, 20).map(r => r.territory),
+              x: normalizedTerritories.slice(0, 20).map(r => r.count),
+              y: normalizedTerritories.slice(0, 20).map(r => r.territory),
               orientation: 'h',
               marker: { color: '#d62728' },
-              text: territories.slice(0, 20).map(r =>
+              text: normalizedTerritories.slice(0, 20).map(r =>
                 `${r.count} (${totalTerritory > 0 ? ((r.count / totalTerritory) * 100).toFixed(1) : 0}%)`
               ),
               textposition: 'outside',
@@ -200,10 +219,10 @@ export default function CRLSExplorer() {
           <Plot
             data={[{
               type: 'bar',
-              x: bySource.map(r => r.source),
-              y: bySource.map(r => r.crls ?? 0),
+              x: activeBySource.map(r => r.source),
+              y: activeBySource.map(r => r.crls ?? 0),
               marker: { color: '#d62728' },
-              text: bySource.map(r => (r.crls ?? 0).toString()),
+              text: activeBySource.map(r => (r.crls ?? 0).toString()),
               textposition: 'outside',
             }]}
             layout={{
@@ -228,10 +247,10 @@ export default function CRLSExplorer() {
           <Plot
             data={[{
               type: 'bar',
-              x: bySource.map(r => r.source),
-              y: bySource.map(r => totalBySource > 0 ? ((r.crls ?? 0) / totalBySource) * 100 : 0),
+              x: activeBySource.map(r => r.source),
+              y: activeBySource.map(r => totalBySource > 0 ? ((r.crls ?? 0) / totalBySource) * 100 : 0),
               marker: { color: '#ff9896' },
-              text: bySource.map(r => totalBySource > 0 ? (((r.crls ?? 0) / totalBySource) * 100).toFixed(1) + '%' : '0%'),
+              text: activeBySource.map(r => totalBySource > 0 ? (((r.crls ?? 0) / totalBySource) * 100).toFixed(1) + '%' : '0%'),
               textposition: 'outside',
             }]}
             layout={{

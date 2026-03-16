@@ -174,6 +174,22 @@ export default function RRLSExplorer() {
   const timeValues = [...new Set(timeData.map(r => r.value))].slice(0, 8);
   const timeMonths = [...new Set(timeData.map(r => r.month))].sort();
 
+  // Map ordinal dim keys to actual statement field names
+  const DIM_FIELD: Record<string, string> = {
+    line: 'line_type',
+    threat: 'threat_type',
+  };
+
+  // Invert RRLS_ORDINAL_SCORES for label lookup: dim → score → label
+  const ordinalScoreToLabel = useMemo(() => {
+    const result: Record<string, Record<number, string>> = {};
+    for (const [dim, scores] of Object.entries(RRLS_ORDINAL_SCORES)) {
+      result[dim] = {};
+      for (const [label, score] of Object.entries(scores)) result[dim][score] = label;
+    }
+    return result;
+  }, []);
+
   // Compute RRLS ordinal severity over time from raw statements
   const ordinalMonthly = useMemo(() => {
     if (!filteredStatements.length) return {};
@@ -181,10 +197,11 @@ export default function RRLSExplorer() {
     for (const dim of RRLS_ORDINAL_DIMS) {
       agg[dim] = {};
       const scores = RRLS_ORDINAL_SCORES[dim];
+      const field = DIM_FIELD[dim] || dim;
       for (const s of filteredStatements) {
         if (!s.date) continue;
         const month = s.date.slice(0, 7);
-        const val = (s as unknown as Record<string, unknown>)[dim] as string;
+        const val = (s as unknown as Record<string, unknown>)[field] as string;
         if (!val || scores[val] === undefined) continue;
         if (!agg[dim][month]) agg[dim][month] = { total: 0, count: 0 };
         agg[dim][month].total += scores[val];
@@ -210,6 +227,19 @@ export default function RRLSExplorer() {
   }, [ordinalMonthly]);
 
   const dimLabel = DIM_LABELS[selectedDim] || selectedDim;
+
+  // Group values below 1% of total (min 5 values before grouping kicks in)
+  const groupedRows = (() => {
+    if (rows.length <= 5) return rows;
+    const threshold = Math.max(Math.floor(totalCount * 0.01), 3);
+    const main = rows.filter(r => r.count > threshold);
+    const small = rows.filter(r => r.count <= threshold);
+    if (!small.length) return rows;
+    const otherTotal = small.reduce((s, r) => s + r.count, 0);
+    return [...main, { value: 'Other', count: otherTotal }];
+  })();
+  const smallThreshold = Math.max(Math.floor(totalCount * 0.01), 3);
+  const smallValues = new Set(rows.filter(r => r.count <= smallThreshold).map(r => r.value));
 
   return (
     <div className="tab-content">
@@ -245,18 +275,18 @@ export default function RRLSExplorer() {
           <Plot
             data={[{
               type: 'bar',
-              x: rows.map(r => r.count),
-              y: rows.map(r => r.value),
+              x: groupedRows.map(r => r.count),
+              y: groupedRows.map(r => r.value),
               orientation: 'h',
-              marker: { color: rows.map((r, i) => getDimValueColor(RRLS_COLORS, selectedDim, r.value, i)) },
-              text: rows.map(r => r.count.toString()),
+              marker: { color: groupedRows.map((r, i) => getDimValueColor(RRLS_COLORS, selectedDim, r.value, i)) },
+              text: groupedRows.map(r => r.count.toString()),
               textposition: 'outside',
             }]}
             layout={{
               paper_bgcolor: 'transparent', plot_bgcolor: 'transparent',
               font: { color: '#e0e0e0' },
               margin: { t: 10, b: 20, l: 200, r: 60 },
-              height: Math.max(300, rows.length * 28),
+              height: Math.max(300, groupedRows.length * 28),
               yaxis: { autorange: 'reversed' },
               xaxis: { title: 'Count' },
             }}
@@ -266,7 +296,9 @@ export default function RRLSExplorer() {
               const val = e.points?.[0]?.y;
               if (!val) return;
               const field = selectedDim === 'line' ? 'line_type' : selectedDim === 'threat' ? 'threat_type' : selectedDim;
-              const matching = filteredStatements.filter(s => (s as unknown as Record<string, unknown>)[field] === val);
+              const matching = val === 'Other'
+                ? filteredStatements.filter(s => smallValues.has(String((s as unknown as Record<string, unknown>)[field] ?? '')))
+                : filteredStatements.filter(s => (s as unknown as Record<string, unknown>)[field] === val);
               setDrilldown({ title: `${dimLabel}: ${val}`, stmts: matching });
             }}
           />
@@ -284,18 +316,18 @@ export default function RRLSExplorer() {
           <Plot
             data={[{
               type: 'bar',
-              x: rows.map(r => totalCount > 0 ? (r.count / totalCount) * 100 : 0),
-              y: rows.map(r => r.value),
+              x: groupedRows.map(r => totalCount > 0 ? (r.count / totalCount) * 100 : 0),
+              y: groupedRows.map(r => r.value),
               orientation: 'h',
-              marker: { color: rows.map((r, i) => getDimValueColor(RRLS_COLORS, selectedDim, r.value, i)) },
-              text: rows.map(r => totalCount > 0 ? ((r.count / totalCount) * 100).toFixed(1) + '%' : '0%'),
+              marker: { color: groupedRows.map((r, i) => getDimValueColor(RRLS_COLORS, selectedDim, r.value, i)) },
+              text: groupedRows.map(r => totalCount > 0 ? ((r.count / totalCount) * 100).toFixed(1) + '%' : '0%'),
               textposition: 'outside',
             }]}
             layout={{
               paper_bgcolor: 'transparent', plot_bgcolor: 'transparent',
               font: { color: '#e0e0e0' },
               margin: { t: 10, b: 20, l: 200, r: 60 },
-              height: Math.max(300, rows.length * 28),
+              height: Math.max(300, groupedRows.length * 28),
               yaxis: { autorange: 'reversed' },
               xaxis: { title: '% of RRLS Statements', ticksuffix: '%' },
             }}
@@ -305,7 +337,9 @@ export default function RRLSExplorer() {
               const val = e.points?.[0]?.y;
               if (!val) return;
               const field = selectedDim === 'line' ? 'line_type' : selectedDim === 'threat' ? 'threat_type' : selectedDim;
-              const matching = filteredStatements.filter(s => (s as unknown as Record<string, unknown>)[field] === val);
+              const matching = val === 'Other'
+                ? filteredStatements.filter(s => smallValues.has(String((s as unknown as Record<string, unknown>)[field] ?? '')))
+                : filteredStatements.filter(s => (s as unknown as Record<string, unknown>)[field] === val);
               setDrilldown({ title: `${dimLabel}: ${val}`, stmts: matching });
             }}
           />
@@ -426,7 +460,7 @@ export default function RRLSExplorer() {
                 <h4>Average Ordinal Severity Over Time</h4>
                 <ChartInfo
                   title="Average Ordinal Severity Over Time"
-                  description="Each line shows the weighted average ordinal score per month for RRLS dimensions that have natural ordering: Line Type (1-3), Threat Type (1-3), Specificity (1-3), Immediacy (1-3), Durability (1-7). Higher values indicate more explicit, immediate, and durable red line statements."
+                  description="Each line shows the monthly average ordinal score per dimension. Hover over points to see the nearest category label. Scale decoder — Line Type: 1=Vague Line, 2=Quasi-Line, 3=Explicit Line | Threat Type: 1=Vague Threat, 2=Medium Threat, 3=Explicit Threat | Specificity: 1=Vague, 2=In-between, 3=Specific | Immediacy: 1=Long-term, 2=Conditional, 3=Immediate | Durability: 1=One-time, 2=Short-term, 3=Revocable, 4=Conditional, 5=Long-term, 6=Indefinite, 7=Irrevocable | Line/Threat Intensity: 1=Low, 2=Moderate, 3=High, 4=Very High."
                 />
               </div>
               <Plot
@@ -436,9 +470,16 @@ export default function RRLSExplorer() {
                   name: DIM_LABELS[dim] || dim,
                   x: ordinalMonths,
                   y: ordinalMonths.map(m => ordinalMonthly[dim]?.[m] || null),
+                  customdata: ordinalMonths.map(m => {
+                    const score = ordinalMonthly[dim]?.[m];
+                    if (!score) return '';
+                    const label = ordinalScoreToLabel[dim]?.[Math.round(score)];
+                    return label ? `≈ ${label}` : '';
+                  }),
                   connectgaps: true,
                   line: { color: RRLS_DIM_COLORS[dim], width: 2 },
                   marker: { size: 4 },
+                  hovertemplate: `<b>${DIM_LABELS[dim] || dim}</b><br>%{x}: %{y:.2f} %{customdata}<extra></extra>`,
                 }))}
                 layout={{
                   paper_bgcolor: 'transparent', plot_bgcolor: 'transparent',
@@ -472,12 +513,13 @@ export default function RRLSExplorer() {
           {showBreakdowns && RRLS_ORDINAL_DIMS.map(dim => {
             const scores = RRLS_ORDINAL_SCORES[dim];
             const vals = Object.keys(scores).sort((a, b) => scores[a] - scores[b]);
+            const dimField = DIM_FIELD[dim] || dim;
             // Aggregate from raw statements by month
             const agg: Record<string, Record<string, number>> = {};
             for (const s of filteredStatements) {
               if (!s.date) continue;
               const month = s.date.slice(0, 7);
-              const val = (s as unknown as Record<string, unknown>)[dim] as string;
+              const val = (s as unknown as Record<string, unknown>)[dimField] as string;
               if (!val || scores[val] === undefined) continue;
               if (!agg[month]) agg[month] = {};
               agg[month][val] = (agg[month][val] || 0) + 1;
@@ -519,7 +561,7 @@ export default function RRLSExplorer() {
                       if (!pt) return;
                       const month = pt.x;
                       const val = pt.data.name;
-                      const matching = filteredStatements.filter(s => s.date?.startsWith(month) && (s as unknown as Record<string, unknown>)[dim] === val);
+                      const matching = filteredStatements.filter(s => s.date?.startsWith(month) && (s as unknown as Record<string, unknown>)[dimField] === val);
                       setDrilldown({ title: `${DIM_LABELS[dim] || dim}: ${val} (${month})`, stmts: matching });
                     }}
                   />

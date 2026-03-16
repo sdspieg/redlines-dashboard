@@ -10,6 +10,7 @@ export default function TimeSeries() {
   const [rrls, setRrls] = useState<MonthlyRow[]>([]);
   const [nts, setNts] = useState<MonthlyRow[]>([]);
   const [crls, setCrls] = useState<MonthlyRow[]>([]);
+  const [lrls, setLrls] = useState<{ month: string; lang: string; count: number }[]>([]);
   const [chunks, setChunks] = useState<{ month: string; total_chunks: number }[]>([]);
   const [warPers, setWarPers] = useState<WarContextRow[]>([]);
   const [warAcled, setWarAcled] = useState<WarContextRow[]>([]);
@@ -23,6 +24,7 @@ export default function TimeSeries() {
     load<MonthlyRow[]>('rrls_monthly.json').then(setRrls);
     load<MonthlyRow[]>('nts_monthly.json').then(setNts);
     load<MonthlyRow[]>('crls_monthly.json').then(setCrls);
+    load<{ month: string; lang: string; count: number }[]>('lrls_monthly.json').then(setLrls);
     load<{ month: string; total_chunks: number }[]>('chunks_monthly.json').then(setChunks);
     load<WarContextRow[]>('war_context_personnel.json').then(setWarPers);
     load<WarContextRow[]>('war_context_acled.json').then(setWarAcled);
@@ -52,21 +54,25 @@ export default function TimeSeries() {
   const rrlsM = agg(rrls);
   const ntsM = agg(nts);
   const crlsM = agg(crls);
+  const lrlsM: Record<string, number> = {};
+  for (const r of lrls) lrlsM[r.month] = (lrlsM[r.month] || 0) + r.count;
   const chunksM: Record<string, number> = {};
   for (const r of chunks) chunksM[r.month] = r.total_chunks;
 
   const allMonths = [...new Set([
-    ...Object.keys(rrlsM), ...Object.keys(ntsM), ...Object.keys(crlsM),
+    ...Object.keys(rrlsM), ...Object.keys(ntsM), ...Object.keys(crlsM), ...Object.keys(lrlsM),
   ])].sort();
 
   const rrlsRate = allMonths.map(m => chunksM[m] ? ((rrlsM[m] || 0) / chunksM[m]) * 100 : 0);
   const ntsRate = allMonths.map(m => chunksM[m] ? ((ntsM[m] || 0) / chunksM[m]) * 100 : 0);
   const crlsRate = allMonths.map(m => chunksM[m] ? ((crlsM[m] || 0) / chunksM[m]) * 100 : 0);
+  const lrlsRate = allMonths.map(m => chunksM[m] ? ((lrlsM[m] || 0) / chunksM[m]) * 100 : 0);
 
   // Consistent statement type colors
   const RRLS_COLOR = '#d32f2f';
   const NTS_COLOR = '#fdd835';
-  const CRLS_COLOR = '#d62728';
+  const CRLS_COLOR = '#9467bd';      // purple — distinct from RRLS red
+  const PERSONNEL_COLOR = '#17becf'; // teal for personnel losses line
 
   return (
     <div className="tab-content">
@@ -146,6 +152,14 @@ export default function TimeSeries() {
                 y: viewMode === 'absolute' ? allMonths.map(m => crlsM[m] || 0) : crlsRate,
                 line: { color: CRLS_COLOR, width: 2 }
               },
+              {
+                type: 'scatter',
+                mode: 'lines',
+                name: viewMode === 'absolute' ? 'LRLS' : 'LRLS %',
+                x: allMonths,
+                y: viewMode === 'absolute' ? allMonths.map(m => lrlsM[m] || 0) : lrlsRate,
+                line: { color: '#2ca02c', width: 2 }
+              },
             ]}
             layout={{
               paper_bgcolor: 'transparent', plot_bgcolor: 'transparent',
@@ -183,7 +197,7 @@ export default function TimeSeries() {
             fontSize: '14px',
             textAlign: 'center'
           }}>
-            <strong>Total Statements: RRLS={Object.values(rrlsM).reduce((a,b) => a+b, 0)}, NTS={Object.values(ntsM).reduce((a,b) => a+b, 0)}, CRLS={Object.values(crlsM).reduce((a,b) => a+b, 0)}</strong>
+            <strong>Total Statements: RRLS={Object.values(rrlsM).reduce((a,b) => a+b, 0)}, NTS={Object.values(ntsM).reduce((a,b) => a+b, 0)}, CRLS={Object.values(crlsM).reduce((a,b) => a+b, 0)}, LRLS={Object.values(lrlsM).reduce((a,b) => a+b, 0)}</strong>
             {sourceFilter !== 'all' && ` (${sourceFilter === 'kremlin' ? 'Kremlin' :
               sourceFilter === 'duma' ? 'State Duma' :
               sourceFilter === 'federation' ? 'Federation Council' :
@@ -205,7 +219,7 @@ export default function TimeSeries() {
             <Plot
               data={[
                 { type: 'bar', name: 'RRLS', x: allMonths, y: allMonths.map(m => rrlsM[m] || 0), marker: { color: RRLS_COLOR, opacity: 0.7 }, yaxis: 'y' },
-                { type: 'scatter', mode: 'lines', name: 'Personnel Losses', x: warPers.map(r => r.month), y: warPers.map(r => r.personnel_losses ?? 0), line: { color: CRLS_COLOR, width: 2 }, yaxis: 'y2' },
+                { type: 'scatter', mode: 'lines', name: 'Personnel Losses', x: warPers.map(r => r.month), y: warPers.map(r => r.personnel_losses ?? 0), line: { color: PERSONNEL_COLOR, width: 2 }, yaxis: 'y2' },
               ]}
               layout={{
                 paper_bgcolor: 'transparent', plot_bgcolor: 'transparent',
@@ -235,24 +249,26 @@ export default function TimeSeries() {
         <div className="chart-row">
           <div className="chart-box">
             <div className="chart-title-bar">
-              <h4>{'\u2622'} NTS vs. ACLED Conflict Events</h4>
+              <h4>{'\u2622'} NTS &amp; RRLS vs. ACLED Conflict Events (from 2022)</h4>
               <ChartInfo
-                title="NTS vs. ACLED Events"
-                description="Dual-axis chart comparing monthly NTS counts (bars, left axis) with ACLED conflict events (line, right axis). Shows whether nuclear threat rhetoric correlates with conflict intensity."
+                title="NTS & RRLS vs. ACLED Events"
+                description="Dual-axis chart comparing monthly NTS and RRLS counts (bars, left axis) with ACLED conflict events (line, right axis). Data starts from 2022 to match ACLED availability. Shows whether rhetoric correlates with conflict intensity."
               />
             </div>
             <Plot
               data={[
-                { type: 'bar', name: '\u2622 NTS', x: allMonths, y: allMonths.map(m => ntsM[m] || 0), marker: { color: NTS_COLOR, opacity: 0.7 }, yaxis: 'y' },
-                { type: 'scatter', mode: 'lines', name: 'ACLED Events', x: warAcled.map(r => r.month), y: warAcled.map(r => r.events ?? 0), line: { color: CRLS_COLOR, width: 2 }, yaxis: 'y2' },
+                { type: 'bar', name: '\u2622 NTS', x: warAcled.map(r => r.month), y: warAcled.map(r => ntsM[r.month] || 0), marker: { color: NTS_COLOR, opacity: 0.8 }, yaxis: 'y' },
+                { type: 'bar', name: 'RRLS', x: warAcled.map(r => r.month), y: warAcled.map(r => rrlsM[r.month] || 0), marker: { color: RRLS_COLOR, opacity: 0.6 }, yaxis: 'y' },
+                { type: 'scatter', mode: 'lines', name: 'ACLED Events', x: warAcled.map(r => r.month), y: warAcled.map(r => r.events ?? 0), line: { color: PERSONNEL_COLOR, width: 2 }, yaxis: 'y2' },
               ]}
               layout={{
+                barmode: 'group',
                 paper_bgcolor: 'transparent', plot_bgcolor: 'transparent',
                 font: { color: '#e0e0e0' },
                 margin: { t: 10, b: 40, l: 60, r: 60 },
                 height: 350,
                 legend: { orientation: 'h', y: 1.1 },
-                yaxis: { title: '\u2622 NTS Count', side: 'left' },
+                yaxis: { title: 'Statement Count', side: 'left' },
                 yaxis2: { title: 'ACLED Events', side: 'right', overlaying: 'y' },
               }}
               config={{ displayModeBar: false, responsive: true }}
@@ -260,9 +276,14 @@ export default function TimeSeries() {
                 const pt = e.points?.[0];
                 if (!pt) return;
                 const month = pt.x;
-                if (!pt.data.name.includes('NTS')) return;
-                const matching = ntsStmts.filter(s => s.date?.startsWith(month));
-                setDrilldown({ title: `NTS (${month})`, stmts: matching, mode: 'nts' });
+                const name = pt.data.name;
+                if (name.includes('NTS')) {
+                  const matching = ntsStmts.filter(s => s.date?.startsWith(month));
+                  setDrilldown({ title: `NTS (${month})`, stmts: matching, mode: 'nts' });
+                } else if (name === 'RRLS') {
+                  const matching = rrlsStmts.filter(s => s.date?.startsWith(month));
+                  setDrilldown({ title: `RRLS (${month})`, stmts: matching, mode: 'rrls' });
+                }
               }}
               style={{ width: '100%', cursor: 'pointer' }}
             />

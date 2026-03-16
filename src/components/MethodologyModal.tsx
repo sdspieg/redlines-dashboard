@@ -29,12 +29,12 @@ export default function MethodologyModal() {
             </p>
             <ol>
               <li>
-                <strong>First Pass (GPT-4o screening):</strong> Each chunk is screened for relevance
+                <strong>First Pass (openai/gpt-oss-120b):</strong> Each chunk is screened for relevance
                 as a Russian Red Line Statement (RLS) or Nuclear Threat Statement (NTS). High-recall
                 binary classification with brief rationale.
               </li>
               <li>
-                <strong>Second Pass (GPT-5 mini taxonomy):</strong> Confirmed RLS chunks are annotated
+                <strong>Second Pass (openai/gpt-oss-120b taxonomy):</strong> Confirmed RLS chunks are annotated
                 across 18 taxonomy dimensions (theme, audience, escalation level, nature of threat,
                 line type, threat type, specificity, immediacy, durability, etc.). NTS chunks are
                 annotated across 15 dimensions (statement type, threat type, capability, tone,
@@ -42,7 +42,7 @@ export default function MethodologyModal() {
                 confidence score (7-10).
               </li>
               <li>
-                <strong>Third Pass (Civilizational framing):</strong> RRLS statements are further
+                <strong>Third Pass (gpt-5-mini — civilizational framing):</strong> RRLS statements are further
                 screened for civilizational red line rhetoric (CRLS) — statements invoking cultural
                 identity, historical destiny, or civilizational conflict narratives. CRLS are annotated
                 for framing type and territory references.

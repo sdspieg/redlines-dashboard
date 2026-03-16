@@ -44,12 +44,12 @@ def export_all():
     print("\n[1] LRLS stats")
     stats = qone(conn, """
         SELECT
-            (SELECT COUNT(*) FROM lrls_match) AS total_matches,
-            (SELECT COUNT(DISTINCT chunk_id) FROM lrls_match) AS unique_chunks,
-            (SELECT COUNT(*) FROM lrls_match WHERE lang = 'ru') AS ru_matches,
-            (SELECT COUNT(*) FROM lrls_match WHERE lang = 'en') AS en_matches,
-            (SELECT COUNT(DISTINCT chunk_id) FROM lrls_match WHERE lang = 'ru') AS ru_chunks,
-            (SELECT COUNT(DISTINCT chunk_id) FROM lrls_match WHERE lang = 'en') AS en_chunks
+            (SELECT COUNT(*) FROM lrls_match WHERE is_semantic_match IS TRUE) AS total_matches,
+            (SELECT COUNT(DISTINCT chunk_id) FROM lrls_match WHERE is_semantic_match IS TRUE) AS unique_chunks,
+            (SELECT COUNT(*) FROM lrls_match WHERE is_semantic_match IS TRUE AND lang = 'ru') AS ru_matches,
+            (SELECT COUNT(*) FROM lrls_match WHERE is_semantic_match IS TRUE AND lang = 'en') AS en_matches,
+            (SELECT COUNT(DISTINCT chunk_id) FROM lrls_match WHERE is_semantic_match IS TRUE AND lang = 'ru') AS ru_chunks,
+            (SELECT COUNT(DISTINCT chunk_id) FROM lrls_match WHERE is_semantic_match IS TRUE AND lang = 'en') AS en_chunks
     """)
     save(stats, "lrls_stats.json")
 
@@ -60,6 +60,7 @@ def export_all():
                COUNT(*) AS matches,
                COUNT(DISTINCT chunk_id) AS chunks
         FROM lrls_match
+        WHERE is_semantic_match IS TRUE
         GROUP BY lang
         ORDER BY matches DESC
     """)
@@ -74,7 +75,8 @@ def export_all():
         FROM lrls_match m
         JOIN document_chunk dc ON dc.id = m.chunk_id
         JOIN document d ON d.id = dc.document_id
-        WHERE d.date IS NOT NULL
+        WHERE m.is_semantic_match IS TRUE
+          AND d.date IS NOT NULL
         GROUP BY DATE_TRUNC('month', d.date), m.lang
         ORDER BY month
     """)
@@ -91,6 +93,7 @@ def export_all():
         FROM lrls_match m
         JOIN document_chunk dc ON dc.id = m.chunk_id
         JOIN document d ON d.id = dc.document_id
+        WHERE m.is_semantic_match IS TRUE
         GROUP BY d.source, d."database"
         ORDER BY count DESC
     """)
@@ -101,6 +104,7 @@ def export_all():
     top_phrases = q(conn, """
         SELECT matched_phrase, lang, COUNT(*) AS count
         FROM lrls_match
+        WHERE is_semantic_match IS TRUE
         GROUP BY matched_phrase, lang
         ORDER BY count DESC
         LIMIT 40
@@ -117,6 +121,7 @@ def export_all():
         FROM lrls_match m
         JOIN document_chunk dc ON dc.id = m.chunk_id
         JOIN document d ON d.id = dc.document_id
+        WHERE m.is_semantic_match IS TRUE
         ORDER BY d.date DESC, m.chunk_id
     """)
     save(matches, "lrls_matches.json")

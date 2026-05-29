@@ -1,0 +1,722 @@
+{
+  "generated_at": "2026-05-29T01:39:12.377765Z",
+  "snapshot_count": 227,
+  "max_lag": 4,
+  "options": {
+    "country": false,
+    "weapons": false,
+    "weapon_acled_only": true,
+    "sliding_window": false,
+    "actors": false
+  },
+  "key_findings": {
+    "3.1": {
+      "description": "Threat escalation drives aid response",
+      "forward": {
+        "f_stat": 10.94249337801528,
+        "p_value": 0.0010955647645330968,
+        "lag": 1,
+        "significant": "True",
+        "differenced": false
+      },
+      "reverse": {
+        "f_stat": 1.0138418764159525,
+        "p_value": 0.38742823856511377,
+        "lag": 3,
+        "significant": "False",
+        "differenced": false
+      },
+      "interpretation": "count_THREATENS Granger-causes count_AIDS"
+    },
+    "3.2": {
+      "description": "Missile strikes affect territorial control",
+      "forward": {
+        "f_stat": 0.21382688516636594,
+        "p_value": 0.6442372098936329,
+        "lag": 1,
+        "significant": "False",
+        "differenced": true
+      },
+      "reverse": {
+        "f_stat": 2.105929911163056e-07,
+        "p_value": 0.999634259601298,
+        "lag": 1,
+        "significant": "False",
+        "differenced": true
+      },
+      "interpretation": "No significant Granger causality"
+    },
+    "3.3": {
+      "description": "Sanctions reduce fossil fuel trade",
+      "forward": {
+        "f_stat": 0.020640528725609498,
+        "p_value": 0.885892871797092,
+        "lag": 1,
+        "significant": "False",
+        "differenced": true
+      },
+      "reverse": {
+        "f_stat": 0.008683480110186157,
+        "p_value": 0.9258404797422124,
+        "lag": 1,
+        "significant": "False",
+        "differenced": true
+      },
+      "interpretation": "No significant Granger causality"
+    },
+    "3.7": {
+      "description": "Threat/strike substitution pattern",
+      "forward": {
+        "f_stat": 0.05993933824498243,
+        "p_value": 0.8068179918554286,
+        "lag": 1,
+        "significant": "False",
+        "differenced": true
+      },
+      "reverse": {
+        "f_stat": 2.0298651168818678,
+        "p_value": 0.13381727186003944,
+        "lag": 2,
+        "significant": "False",
+        "differenced": true
+      },
+      "interpretation": "No significant Granger causality"
+    },
+    "attacks_displacement": {
+      "description": "Attacks drive displacement",
+      "forward": {
+        "f_stat": 0.13058896030809605,
+        "p_value": 0.8776463948660977,
+        "lag": 2,
+        "significant": "False",
+        "differenced": false
+      },
+      "reverse": {
+        "f_stat": 0.4243953027321646,
+        "p_value": 0.5154227664162419,
+        "lag": 1,
+        "significant": "False",
+        "differenced": false
+      },
+      "interpretation": "No significant Granger causality"
+    },
+    "aid_sanctions": {
+      "description": "Aid correlates with sanctions",
+      "forward": {
+        "f_stat": 0.2795527416907854,
+        "p_value": 0.7563900351588682,
+        "lag": 2,
+        "significant": "False",
+        "differenced": false
+      },
+      "reverse": {
+        "f_stat": 0.1387941251382102,
+        "p_value": 0.7098365992039387,
+        "lag": 1,
+        "significant": "False",
+        "differenced": false
+      },
+      "interpretation": "No significant Granger causality"
+    },
+    "threats_attacks": {
+      "description": "Threats precede attacks",
+      "forward": {
+        "f_stat": 3.960072148192496,
+        "p_value": 0.020436036055698548,
+        "lag": 2,
+        "significant": "True",
+        "differenced": false
+      },
+      "reverse": {
+        "f_stat": 3.5205531831427836,
+        "p_value": 0.008311316669132873,
+        "lag": 4,
+        "significant": "True",
+        "differenced": false
+      },
+      "interpretation": "Bidirectional feedback loop"
+    }
+  },
+  "pairwise": [
+    {
+      "cause": "count_THREATENS",
+      "effect": "count_RED_LINES",
+      "f_stat": 22.30805754942543,
+      "p_value": 4.1069837170004675e-06,
+      "lag": 1,
+      "significant": "True",
+      "differenced": false
+    },
+    {
+      "cause": "count_ATTACKS",
+      "effect": "count_NUCLEAR_THREATS",
+      "f_stat": 12.962487803542214,
+      "p_value": 4.7665573443822495e-06,
+      "lag": 2,
+      "significant": "True",
+      "differenced": false
+    },
+    {
+      "cause": "count_AIDS",
+      "effect": "count_RED_LINES",
+      "f_stat": 19.05093958750117,
+      "p_value": 1.9473740477837787e-05,
+      "lag": 1,
+      "significant": "True",
+      "differenced": false
+    },
+    {
+      "cause": "count_TRADES_FOSSIL",
+      "effect": "count_CONTROLS",
+      "f_stat": 18.6291260166489,
+      "p_value": 2.3918655793209176e-05,
+      "lag": 1,
+      "significant": "True",
+      "differenced": true
+    },
+    {
+      "cause": "count_CONTROLS",
+      "effect": "count_TRADES_FOSSIL",
+      "f_stat": 7.479284040182075,
+      "p_value": 8.709755440250433e-05,
+      "lag": 3,
+      "significant": "True",
+      "differenced": true
+    },
+    {
+      "cause": "count_ARMS",
+      "effect": "count_DISINFORMS",
+      "f_stat": 8.920780437085579,
+      "p_value": 0.0001882967367526911,
+      "lag": 2,
+      "significant": "True",
+      "differenced": false
+    },
+    {
+      "cause": "count_TRADES_FOSSIL",
+      "effect": "count_DISINFORMS",
+      "f_stat": 5.4957736264978045,
+      "p_value": 0.0003140276598859737,
+      "lag": 4,
+      "significant": "True",
+      "differenced": true
+    },
+    {
+      "cause": "count_THREATENS",
+      "effect": "count_ARMS",
+      "f_stat": 13.063202255453824,
+      "p_value": 0.0003722451676079208,
+      "lag": 1,
+      "significant": "True",
+      "differenced": false
+    },
+    {
+      "cause": "count_THREATENS",
+      "effect": "count_AIDS",
+      "f_stat": 10.94249337801528,
+      "p_value": 0.0010955647645330968,
+      "lag": 1,
+      "significant": "True",
+      "differenced": false
+    },
+    {
+      "cause": "count_CYBER_ATTACKS",
+      "effect": "count_RED_LINES",
+      "f_stat": 6.406603300530505,
+      "p_value": 0.001976971782648218,
+      "lag": 2,
+      "significant": "True",
+      "differenced": true
+    },
+    {
+      "cause": "count_ARMS",
+      "effect": "count_AIDS",
+      "f_stat": 9.55370896306173,
+      "p_value": 0.0022495974052153533,
+      "lag": 1,
+      "significant": "True",
+      "differenced": false
+    },
+    {
+      "cause": "count_NUCLEAR_THREATS",
+      "effect": "count_LAUNCHES",
+      "f_stat": 8.784756571062264,
+      "p_value": 0.0033688740162195474,
+      "lag": 1,
+      "significant": "True",
+      "differenced": true
+    },
+    {
+      "cause": "count_LAUNCHES",
+      "effect": "count_SANCTIONS",
+      "f_stat": 8.417914424819301,
+      "p_value": 0.004089345880632034,
+      "lag": 1,
+      "significant": "True",
+      "differenced": true
+    },
+    {
+      "cause": "count_CONTROLS",
+      "effect": "count_DISINFORMS",
+      "f_stat": 4.466503512592894,
+      "p_value": 0.004568256106483037,
+      "lag": 3,
+      "significant": "True",
+      "differenced": false
+    },
+    {
+      "cause": "count_DISPLACES",
+      "effect": "count_RED_LINES",
+      "f_stat": 4.400224475888949,
+      "p_value": 0.004986267103308295,
+      "lag": 3,
+      "significant": "True",
+      "differenced": false
+    },
+    {
+      "cause": "count_ATTACKS",
+      "effect": "count_RED_LINES",
+      "f_stat": 7.761193371611651,
+      "p_value": 0.0057976281830964815,
+      "lag": 1,
+      "significant": "True",
+      "differenced": false
+    },
+    {
+      "cause": "count_DISINFORMS",
+      "effect": "count_THREATENS",
+      "f_stat": 3.6581902456649065,
+      "p_value": 0.006625585551607749,
+      "lag": 4,
+      "significant": "True",
+      "differenced": false
+    },
+    {
+      "cause": "count_AIDS",
+      "effect": "count_ATTACKS",
+      "f_stat": 4.091142893568388,
+      "p_value": 0.0074997588076078925,
+      "lag": 3,
+      "significant": "True",
+      "differenced": false
+    },
+    {
+      "cause": "count_ATTACKS",
+      "effect": "count_THREATENS",
+      "f_stat": 3.5205531831427836,
+      "p_value": 0.008311316669132873,
+      "lag": 4,
+      "significant": "True",
+      "differenced": false
+    },
+    {
+      "cause": "count_DISINFORMS",
+      "effect": "count_AIDS",
+      "f_stat": 3.4686327816730147,
+      "p_value": 0.009052038149705788,
+      "lag": 4,
+      "significant": "True",
+      "differenced": false
+    },
+    {
+      "cause": "count_TRADES_FOSSIL",
+      "effect": "count_RED_LINES",
+      "f_stat": 3.8678385800889497,
+      "p_value": 0.010075575643420986,
+      "lag": 3,
+      "significant": "True",
+      "differenced": true
+    },
+    {
+      "cause": "count_RED_LINES",
+      "effect": "count_CYBER_ATTACKS",
+      "f_stat": 4.572572305412022,
+      "p_value": 0.011337070059334042,
+      "lag": 2,
+      "significant": "True",
+      "differenced": true
+    },
+    {
+      "cause": "count_DISINFORMS",
+      "effect": "count_TRADES_FOSSIL",
+      "f_stat": 3.6067010864864146,
+      "p_value": 0.014214096255625752,
+      "lag": 3,
+      "significant": "True",
+      "differenced": true
+    },
+    {
+      "cause": "count_ARMS",
+      "effect": "count_SANCTIONS",
+      "f_stat": 4.208634892673139,
+      "p_value": 0.0160809575961528,
+      "lag": 2,
+      "significant": "True",
+      "differenced": false
+    },
+    {
+      "cause": "count_THREATENS",
+      "effect": "count_ATTACKS",
+      "f_stat": 3.960072148192496,
+      "p_value": 0.020436036055698548,
+      "lag": 2,
+      "significant": "True",
+      "differenced": false
+    },
+    {
+      "cause": "count_ARMS",
+      "effect": "count_ATTACKS",
+      "f_stat": 3.320902686602861,
+      "p_value": 0.020691088091889354,
+      "lag": 3,
+      "significant": "True",
+      "differenced": false
+    },
+    {
+      "cause": "count_RED_LINES",
+      "effect": "count_ARMS",
+      "f_stat": 5.235038290660118,
+      "p_value": 0.02307341985003064,
+      "lag": 1,
+      "significant": "True",
+      "differenced": false
+    },
+    {
+      "cause": "count_RED_LINES",
+      "effect": "count_AIDS",
+      "f_stat": 5.211298589085291,
+      "p_value": 0.023383012043204476,
+      "lag": 1,
+      "significant": "True",
+      "differenced": false
+    },
+    {
+      "cause": "count_DISINFORMS",
+      "effect": "count_RED_LINES",
+      "f_stat": 4.914889960812857,
+      "p_value": 0.02763583011294779,
+      "lag": 1,
+      "significant": "True",
+      "differenced": false
+    },
+    {
+      "cause": "count_THREATENS",
+      "effect": "count_NUCLEAR_THREATS",
+      "f_stat": 4.376203823731373,
+      "p_value": 0.03757567973453213,
+      "lag": 1,
+      "significant": "True",
+      "differenced": false
+    },
+    {
+      "cause": "count_ARMS",
+      "effect": "count_RED_LINES",
+      "f_stat": 2.8644150674575855,
+      "p_value": 0.03762654462739756,
+      "lag": 3,
+      "significant": "True",
+      "differenced": false
+    },
+    {
+      "cause": "count_DISINFORMS",
+      "effect": "count_CONTROLS",
+      "f_stat": 2.567954734210862,
+      "p_value": 0.03910951270474694,
+      "lag": 4,
+      "significant": "True",
+      "differenced": false
+    },
+    {
+      "cause": "count_ARMS",
+      "effect": "count_DISPLACES",
+      "f_stat": 3.109560163738265,
+      "p_value": 0.046587657243251535,
+      "lag": 2,
+      "significant": "True",
+      "differenced": false
+    },
+    {
+      "cause": "count_CYBER_ATTACKS",
+      "effect": "count_ARMS",
+      "f_stat": 3.098462295702532,
+      "p_value": 0.047102257634034195,
+      "lag": 2,
+      "significant": "True",
+      "differenced": true
+    },
+    {
+      "cause": "count_THREATENS",
+      "effect": "count_TRADES_FOSSIL",
+      "f_stat": 3.8852767062042446,
+      "p_value": 0.04995355698458959,
+      "lag": 1,
+      "significant": "True",
+      "differenced": true
+    }
+  ],
+  "rrls_nts": {
+    "triggers_rhetoric": [
+      {
+        "cause": "count_THREATENS",
+        "effect": "count_RED_LINES",
+        "f_stat": 22.30805754942543,
+        "p_value": 4.1069837170004675e-06,
+        "lag": 1,
+        "significant": "True",
+        "differenced": false
+      },
+      {
+        "cause": "count_ATTACKS",
+        "effect": "count_NUCLEAR_THREATS",
+        "f_stat": 12.962487803542214,
+        "p_value": 4.7665573443822495e-06,
+        "lag": 2,
+        "significant": "True",
+        "differenced": false
+      },
+      {
+        "cause": "count_AIDS",
+        "effect": "count_RED_LINES",
+        "f_stat": 19.05093958750117,
+        "p_value": 1.9473740477837787e-05,
+        "lag": 1,
+        "significant": "True",
+        "differenced": false
+      },
+      {
+        "cause": "count_CYBER_ATTACKS",
+        "effect": "count_RED_LINES",
+        "f_stat": 6.406603300530505,
+        "p_value": 0.001976971782648218,
+        "lag": 2,
+        "significant": "True",
+        "differenced": true
+      },
+      {
+        "cause": "count_DISPLACES",
+        "effect": "count_RED_LINES",
+        "f_stat": 4.400224475888949,
+        "p_value": 0.004986267103308295,
+        "lag": 3,
+        "significant": "True",
+        "differenced": false
+      },
+      {
+        "cause": "count_ATTACKS",
+        "effect": "count_RED_LINES",
+        "f_stat": 7.761193371611651,
+        "p_value": 0.0057976281830964815,
+        "lag": 1,
+        "significant": "True",
+        "differenced": false
+      },
+      {
+        "cause": "count_TRADES_FOSSIL",
+        "effect": "count_RED_LINES",
+        "f_stat": 3.8678385800889497,
+        "p_value": 0.010075575643420986,
+        "lag": 3,
+        "significant": "True",
+        "differenced": true
+      },
+      {
+        "cause": "count_DISINFORMS",
+        "effect": "count_RED_LINES",
+        "f_stat": 4.914889960812857,
+        "p_value": 0.02763583011294779,
+        "lag": 1,
+        "significant": "True",
+        "differenced": false
+      },
+      {
+        "cause": "count_THREATENS",
+        "effect": "count_NUCLEAR_THREATS",
+        "f_stat": 4.376203823731373,
+        "p_value": 0.03757567973453213,
+        "lag": 1,
+        "significant": "True",
+        "differenced": false
+      },
+      {
+        "cause": "count_ARMS",
+        "effect": "count_RED_LINES",
+        "f_stat": 2.8644150674575855,
+        "p_value": 0.03762654462739756,
+        "lag": 3,
+        "significant": "True",
+        "differenced": false
+      }
+    ],
+    "rhetoric_effects": [
+      {
+        "cause": "count_NUCLEAR_THREATS",
+        "effect": "count_LAUNCHES",
+        "f_stat": 8.784756571062264,
+        "p_value": 0.0033688740162195474,
+        "lag": 1,
+        "significant": "True",
+        "differenced": true
+      },
+      {
+        "cause": "count_RED_LINES",
+        "effect": "count_CYBER_ATTACKS",
+        "f_stat": 4.572572305412022,
+        "p_value": 0.011337070059334042,
+        "lag": 2,
+        "significant": "True",
+        "differenced": true
+      },
+      {
+        "cause": "count_RED_LINES",
+        "effect": "count_ARMS",
+        "f_stat": 5.235038290660118,
+        "p_value": 0.02307341985003064,
+        "lag": 1,
+        "significant": "True",
+        "differenced": false
+      },
+      {
+        "cause": "count_RED_LINES",
+        "effect": "count_AIDS",
+        "f_stat": 5.211298589085291,
+        "p_value": 0.023383012043204476,
+        "lag": 1,
+        "significant": "True",
+        "differenced": false
+      }
+    ],
+    "severity_weighted": [
+      {
+        "cause": "count_ATTACKS",
+        "effect": "severity_NUCLEAR_THREATS",
+        "f_stat": 14.296339365748596,
+        "p_value": 1.4547157276556533e-06,
+        "lag": 2,
+        "significant": "True",
+        "differenced": false
+      },
+      {
+        "cause": "count_THREATENS",
+        "effect": "severity_RED_LINES",
+        "f_stat": 21.3910862634081,
+        "p_value": 6.345829541731796e-06,
+        "lag": 1,
+        "significant": "True",
+        "differenced": false
+      },
+      {
+        "cause": "count_AIDS",
+        "effect": "severity_RED_LINES",
+        "f_stat": 20.54304384682213,
+        "p_value": 9.509508443028558e-06,
+        "lag": 1,
+        "significant": "True",
+        "differenced": false
+      },
+      {
+        "cause": "severity_NUCLEAR_THREATS",
+        "effect": "count_LAUNCHES",
+        "f_stat": 10.290600301165817,
+        "p_value": 0.0015345408052070963,
+        "lag": 1,
+        "significant": "True",
+        "differenced": true
+      },
+      {
+        "cause": "count_ATTACKS",
+        "effect": "severity_RED_LINES",
+        "f_stat": 8.7401204974426,
+        "p_value": 0.003447540558213058,
+        "lag": 1,
+        "significant": "True",
+        "differenced": false
+      },
+      {
+        "cause": "count_CYBER_ATTACKS",
+        "effect": "severity_RED_LINES",
+        "f_stat": 5.785015993856157,
+        "p_value": 0.0035621928276232673,
+        "lag": 2,
+        "significant": "True",
+        "differenced": true
+      },
+      {
+        "cause": "count_DISPLACES",
+        "effect": "severity_RED_LINES",
+        "f_stat": 4.1973850154322205,
+        "p_value": 0.0065181733414904075,
+        "lag": 3,
+        "significant": "True",
+        "differenced": false
+      },
+      {
+        "cause": "count_TRADES_FOSSIL",
+        "effect": "severity_RED_LINES",
+        "f_stat": 4.084366105669519,
+        "p_value": 0.007571950572426767,
+        "lag": 3,
+        "significant": "True",
+        "differenced": true
+      },
+      {
+        "cause": "severity_RED_LINES",
+        "effect": "count_CYBER_ATTACKS",
+        "f_stat": 4.243718778225685,
+        "p_value": 0.015552249581563427,
+        "lag": 2,
+        "significant": "True",
+        "differenced": true
+      },
+      {
+        "cause": "severity_RED_LINES",
+        "effect": "count_AIDS",
+        "f_stat": 4.899485627579359,
+        "p_value": 0.027877875901970106,
+        "lag": 1,
+        "significant": "True",
+        "differenced": false
+      },
+      {
+        "cause": "count_DISINFORMS",
+        "effect": "severity_RED_LINES",
+        "f_stat": 4.801045129069501,
+        "p_value": 0.029478084779720026,
+        "lag": 1,
+        "significant": "True",
+        "differenced": false
+      },
+      {
+        "cause": "severity_RED_LINES",
+        "effect": "count_ARMS",
+        "f_stat": 4.462719839256411,
+        "p_value": 0.03575455862468968,
+        "lag": 1,
+        "significant": "True",
+        "differenced": false
+      },
+      {
+        "cause": "count_ARMS",
+        "effect": "severity_RED_LINES",
+        "f_stat": 3.372231403735367,
+        "p_value": 0.0360959907805255,
+        "lag": 2,
+        "significant": "True",
+        "differenced": false
+      },
+      {
+        "cause": "count_THREATENS",
+        "effect": "severity_NUCLEAR_THREATS",
+        "f_stat": 4.3429436215623465,
+        "p_value": 0.03830161030852586,
+        "lag": 1,
+        "significant": "True",
+        "differenced": false
+      }
+    ]
+  },
+  "country_results": null,
+  "weapon_results": null,
+  "actor_results": null,
+  "sliding_window_results": null,
+  "rhetoric_decomposed": null
+}

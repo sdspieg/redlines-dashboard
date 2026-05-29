@@ -1,0 +1,9 @@
+{
+  "refreshed_at_utc": "2026-05-29T01:39:22Z",
+  "source_host": "StephanOffice",
+  "source_script": "update_redlines_gnn.sh",
+  "run_id": "v6_20260528_2225",
+  "snapshot_run_id": "wacko_v2_32dim",
+  "snapshot_count": 227,
+  "epochs": 200
+}

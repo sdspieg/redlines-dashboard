@@ -1,8 +1,8 @@
 {
-  "as_of_utc": "2026-06-22T05:28:10Z",
+  "as_of_utc": "2026-06-22T03:08:29Z",
   "totals": {
-    "fresh": 16,
-    "lagging": 6,
+    "fresh": 15,
+    "lagging": 7,
     "very_stale": 2,
     "manual": 1,
     "stale": 1
@@ -108,11 +108,11 @@
       "dataset": "GDELT events",
       "schema_table": "global_events.gdelt_events",
       "category": "global_events",
-      "latest_date": "2026-06-21",
-      "rows": 364518,
+      "latest_date": "2026-06-20",
+      "rows": 364465,
       "expected_cadence": "daily",
       "expected_max_lag_days": 2,
-      "days_behind": 1,
+      "days_behind": 2,
       "status": "fresh",
       "note": "GDELT publishes T-1 daily"
     },
@@ -120,11 +120,11 @@
       "dataset": "GDELT GKG coercive quotations",
       "schema_table": "global_events.gdelt_gkg_coercive_quotations",
       "category": "global_events",
-      "latest_date": "2026-06-21",
-      "rows": 387812,
+      "latest_date": "2026-06-20",
+      "rows": 387765,
       "expected_cadence": "daily",
       "expected_max_lag_days": 2,
-      "days_behind": 1,
+      "days_behind": 2,
       "status": "fresh",
       "note": "GKG quotations corpus (coercion subset)"
     },
@@ -132,12 +132,12 @@
       "dataset": "GDELT GKG redline quotations",
       "schema_table": "global_events.gdelt_gkg_redline_quotations",
       "category": "global_events",
-      "latest_date": "2026-06-21",
-      "rows": 9627,
+      "latest_date": "2026-06-19",
+      "rows": 9626,
       "expected_cadence": "daily",
       "expected_max_lag_days": 2,
-      "days_behind": 1,
-      "status": "fresh",
+      "days_behind": 3,
+      "status": "lagging",
       "note": "GKG quotations corpus (red-line subset)"
     },
     {

@@ -1,8 +1,8 @@
 {
-  "as_of_utc": "2026-06-26T02:00:40Z",
+  "as_of_utc": "2026-06-27T02:01:54Z",
   "totals": {
-    "fresh": 16,
-    "lagging": 6,
+    "lagging": 9,
+    "fresh": 13,
     "very_stale": 3,
     "manual": 1
   },
@@ -15,8 +15,8 @@
       "rows": 1581,
       "expected_cadence": "daily",
       "expected_max_lag_days": 2,
-      "days_behind": 2,
-      "status": "fresh",
+      "days_behind": 3,
+      "status": "lagging",
       "note": "GitHub JSON refresh; truncate+insert"
     },
     {
@@ -27,16 +27,16 @@
       "rows": 1581,
       "expected_cadence": "daily",
       "expected_max_lag_days": 2,
-      "days_behind": 2,
-      "status": "fresh",
+      "days_behind": 3,
+      "status": "lagging",
       "note": "GitHub JSON refresh; truncate+insert"
     },
     {
       "dataset": "ACLED events",
       "schema_table": "conflict_events.acled_events",
       "category": "conflict_events",
-      "latest_date": "2025-06-25",
-      "rows": 361154,
+      "latest_date": "2025-06-26",
+      "rows": 362191,
       "expected_cadence": "daily",
       "expected_max_lag_days": 400,
       "days_behind": 366,
@@ -51,8 +51,8 @@
       "rows": 574364,
       "expected_cadence": "daily",
       "expected_max_lag_days": 2,
-      "days_behind": 2,
-      "status": "fresh",
+      "days_behind": 3,
+      "status": "lagging",
       "note": "GitHub ZIP refresh"
     },
     {
@@ -63,7 +63,7 @@
       "rows": 51864228,
       "expected_cadence": "daily",
       "expected_max_lag_days": 7,
-      "days_behind": 2,
+      "days_behind": 3,
       "status": "fresh",
       "note": "Daily territorial control snapshots"
     },
@@ -75,7 +75,7 @@
       "rows": 3102821,
       "expected_cadence": "daily",
       "expected_max_lag_days": 14,
-      "days_behind": 25,
+      "days_behind": 26,
       "status": "lagging",
       "note": "Stale >15mo as of 2026-05 \u2014 needs investigation"
     },
@@ -87,7 +87,7 @@
       "rows": 2514,
       "expected_cadence": "monthly",
       "expected_max_lag_days": 60,
-      "days_behind": 352,
+      "days_behind": 353,
       "status": "very_stale",
       "note": "Bellingcat civilian-harm dataset"
     },
@@ -99,7 +99,7 @@
       "rows": 3812,
       "expected_cadence": "daily",
       "expected_max_lag_days": 7,
-      "days_behind": 6,
+      "days_behind": 7,
       "status": "fresh",
       "note": "Kaggle-backed; truncate+insert"
     },
@@ -107,8 +107,8 @@
       "dataset": "GDELT events",
       "schema_table": "global_events.gdelt_events",
       "category": "global_events",
-      "latest_date": "2026-06-24",
-      "rows": 364744,
+      "latest_date": "2026-06-25",
+      "rows": 364808,
       "expected_cadence": "daily",
       "expected_max_lag_days": 2,
       "days_behind": 2,
@@ -119,8 +119,8 @@
       "dataset": "GDELT GKG coercive quotations",
       "schema_table": "global_events.gdelt_gkg_coercive_quotations",
       "category": "global_events",
-      "latest_date": "2026-06-24",
-      "rows": 388468,
+      "latest_date": "2026-06-25",
+      "rows": 388736,
       "expected_cadence": "daily",
       "expected_max_lag_days": 2,
       "days_behind": 2,
@@ -131,8 +131,8 @@
       "dataset": "GDELT GKG redline quotations",
       "schema_table": "global_events.gdelt_gkg_redline_quotations",
       "category": "global_events",
-      "latest_date": "2026-06-24",
-      "rows": 9630,
+      "latest_date": "2026-06-25",
+      "rows": 9633,
       "expected_cadence": "daily",
       "expected_max_lag_days": 2,
       "days_behind": 2,
@@ -147,7 +147,7 @@
       "rows": 233,
       "expected_cadence": "weekly",
       "expected_max_lag_days": 8,
-      "days_behind": 4,
+      "days_behind": 5,
       "status": "fresh",
       "note": "Recomputed Monday 08:00 UTC from coercive quotes"
     },
@@ -155,8 +155,8 @@
       "dataset": "CREA Russia fossil exports",
       "schema_table": "economic_data.crea_russia_fossil",
       "category": "economic_data",
-      "latest_date": "2026-06-24",
-      "rows": 12328,
+      "latest_date": "2026-06-25",
+      "rows": 12334,
       "expected_cadence": "daily",
       "expected_max_lag_days": 7,
       "days_behind": 2,
@@ -171,7 +171,7 @@
       "rows": 5239,
       "expected_cadence": "quarterly",
       "expected_max_lag_days": 120,
-      "days_behind": 238,
+      "days_behind": 239,
       "status": "lagging",
       "note": "Kiel publishes quarterly"
     },
@@ -183,7 +183,7 @@
       "rows": 1891,
       "expected_cadence": "manual",
       "expected_max_lag_days": null,
-      "days_behind": 142,
+      "days_behind": 143,
       "status": "manual",
       "note": "Cloudflare blocks VPS \u2014 must be refreshed manually"
     },
@@ -195,7 +195,7 @@
       "rows": 69818,
       "expected_cadence": "daily",
       "expected_max_lag_days": 30,
-      "days_behind": 152,
+      "days_behind": 153,
       "status": "very_stale",
       "note": "Sanctions targets list"
     },
@@ -207,7 +207,7 @@
       "rows": 8329,
       "expected_cadence": "annual",
       "expected_max_lag_days": 540,
-      "days_behind": 542,
+      "days_behind": 543,
       "status": "lagging",
       "note": "Annual release ~April each year"
     },
@@ -219,7 +219,7 @@
       "rows": 1492,
       "expected_cadence": "annual",
       "expected_max_lag_days": 540,
-      "days_behind": 542,
+      "days_behind": 543,
       "status": "lagging",
       "note": "Annual release"
     },
@@ -231,7 +231,7 @@
       "rows": 1458,
       "expected_cadence": "monthly",
       "expected_max_lag_days": 60,
-      "days_behind": 26,
+      "days_behind": 27,
       "status": "fresh",
       "note": "HAPI internally-displaced persons"
     },
@@ -243,7 +243,7 @@
       "rows": 48516,
       "expected_cadence": "monthly",
       "expected_max_lag_days": 90,
-      "days_behind": 177,
+      "days_behind": 178,
       "status": "lagging",
       "note": "HAPI refugees outflow"
     },
@@ -255,7 +255,7 @@
       "rows": 42534,
       "expected_cadence": "monthly",
       "expected_max_lag_days": 60,
-      "days_behind": -4,
+      "days_behind": -3,
       "status": "fresh",
       "note": "HAPI conflict events"
     },
@@ -267,7 +267,7 @@
       "rows": 2945,
       "expected_cadence": "annual",
       "expected_max_lag_days": 540,
-      "days_behind": 177,
+      "days_behind": 178,
       "status": "fresh",
       "note": "Annual UNHCR release"
     },
@@ -279,7 +279,7 @@
       "rows": 71,
       "expected_cadence": "monthly",
       "expected_max_lag_days": 60,
-      "days_behind": 1759,
+      "days_behind": 1760,
       "status": "very_stale",
       "note": "Known long-broken \u2014 has not updated since 2021"
     },
@@ -291,7 +291,7 @@
       "rows": 596,
       "expected_cadence": "monthly",
       "expected_max_lag_days": 60,
-      "days_behind": 117,
+      "days_behind": 118,
       "status": "lagging",
       "note": "DeepState UA polygons"
     },
@@ -299,11 +299,11 @@
       "dataset": "RRLS confirmed (latest annotation)",
       "schema_table": "redlines.mv_rrls_confirmed",
       "category": "annotations",
-      "latest_date": "2026-06-23",
-      "rows": 2048,
+      "latest_date": "2026-06-25",
+      "rows": 2051,
       "expected_cadence": "daily",
       "expected_max_lag_days": 7,
-      "days_behind": 3,
+      "days_behind": 2,
       "status": "fresh",
       "note": "Confirmed RRLS statements (matview)"
     },
@@ -311,11 +311,11 @@
       "dataset": "NTS confirmed (latest annotation)",
       "schema_table": "redlines.mv_nts_confirmed",
       "category": "annotations",
-      "latest_date": "2026-06-19",
-      "rows": 367,
+      "latest_date": "2026-06-24",
+      "rows": 368,
       "expected_cadence": "daily",
       "expected_max_lag_days": 7,
-      "days_behind": 7,
+      "days_behind": 3,
       "status": "fresh",
       "note": "Confirmed NTS statements (matview)"
     }

@@ -1,6 +1,6 @@
 {
-  "refreshed_at_utc": "2026-07-15T03:10:14Z",
+  "refreshed_at_utc": "2026-07-16T03:08:51Z",
   "source_host": "STEPHAN_OFFICE",
   "source_script": "analytics_job.py (native Windows)",
-  "export_elapsed_s": 611
+  "export_elapsed_s": 528
 }

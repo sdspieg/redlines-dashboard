@@ -1,43 +1,43 @@
 {
-  "as_of_utc": "2026-07-20T02:03:14Z",
+  "as_of_utc": "2026-07-21T02:03:53Z",
   "totals": {
-    "lagging": 5,
-    "fresh": 9,
+    "fresh": 13,
     "stale": 8,
     "very_stale": 3,
-    "manual": 1
+    "manual": 1,
+    "lagging": 1
   },
   "rows": [
     {
       "dataset": "Personnel daily (Ukraine MOD)",
       "schema_table": "equipment_losses.personnel_daily",
       "category": "equipment_losses",
-      "latest_date": "2026-07-17",
-      "rows": 1604,
+      "latest_date": "2026-07-19",
+      "rows": 1606,
       "expected_cadence": "daily",
       "expected_max_lag_days": 2,
-      "days_behind": 3,
-      "status": "lagging",
+      "days_behind": 2,
+      "status": "fresh",
       "note": "GitHub JSON refresh; truncate+insert"
     },
     {
       "dataset": "Equipment daily (Ukraine MOD)",
       "schema_table": "equipment_losses.equipment_daily",
       "category": "equipment_losses",
-      "latest_date": "2026-07-17",
-      "rows": 1604,
+      "latest_date": "2026-07-19",
+      "rows": 1606,
       "expected_cadence": "daily",
       "expected_max_lag_days": 2,
-      "days_behind": 3,
-      "status": "lagging",
+      "days_behind": 2,
+      "status": "fresh",
       "note": "GitHub JSON refresh; truncate+insert"
     },
     {
       "dataset": "ACLED events",
       "schema_table": "conflict_events.acled_events",
       "category": "conflict_events",
-      "latest_date": "2025-07-19",
-      "rows": 388843,
+      "latest_date": "2025-07-20",
+      "rows": 389728,
       "expected_cadence": "daily",
       "expected_max_lag_days": 400,
       "days_behind": 366,
@@ -48,23 +48,23 @@
       "dataset": "VIINA events",
       "schema_table": "conflict_events.viina_events",
       "category": "conflict_events",
-      "latest_date": "2026-07-17",
-      "rows": 577895,
+      "latest_date": "2026-07-19",
+      "rows": 578110,
       "expected_cadence": "daily",
       "expected_max_lag_days": 2,
-      "days_behind": 3,
-      "status": "lagging",
+      "days_behind": 2,
+      "status": "fresh",
       "note": "GitHub ZIP refresh"
     },
     {
       "dataset": "VIINA control",
       "schema_table": "conflict_events.viina_control",
       "category": "conflict_events",
-      "latest_date": "2026-07-17",
-      "rows": 52547880,
+      "latest_date": "2026-07-19",
+      "rows": 52607328,
       "expected_cadence": "daily",
       "expected_max_lag_days": 7,
-      "days_behind": 3,
+      "days_behind": 2,
       "status": "fresh",
       "note": "Daily territorial control snapshots"
     },
@@ -76,7 +76,7 @@
       "rows": 3102821,
       "expected_cadence": "daily",
       "expected_max_lag_days": 14,
-      "days_behind": 49,
+      "days_behind": 50,
       "status": "stale",
       "note": "Stale >15mo as of 2026-05 \u2014 needs investigation"
     },
@@ -88,7 +88,7 @@
       "rows": 2514,
       "expected_cadence": "monthly",
       "expected_max_lag_days": 60,
-      "days_behind": 376,
+      "days_behind": 377,
       "status": "very_stale",
       "note": "Bellingcat civilian-harm dataset"
     },
@@ -96,12 +96,12 @@
       "dataset": "Missile attacks",
       "schema_table": "aerial_assaults.missile_attacks",
       "category": "aerial_assaults",
-      "latest_date": "2026-07-11",
-      "rows": 3893,
+      "latest_date": "2026-07-18",
+      "rows": 3925,
       "expected_cadence": "daily",
       "expected_max_lag_days": 7,
-      "days_behind": 9,
-      "status": "lagging",
+      "days_behind": 3,
+      "status": "fresh",
       "note": "Kaggle-backed; truncate+insert"
     },
     {
@@ -112,7 +112,7 @@
       "rows": 366267,
       "expected_cadence": "daily",
       "expected_max_lag_days": 2,
-      "days_behind": 5,
+      "days_behind": 6,
       "status": "stale",
       "note": "GDELT publishes T-1 daily"
     },
@@ -124,7 +124,7 @@
       "rows": 393106,
       "expected_cadence": "daily",
       "expected_max_lag_days": 2,
-      "days_behind": 5,
+      "days_behind": 6,
       "status": "stale",
       "note": "GKG quotations corpus (coercion subset)"
     },
@@ -136,7 +136,7 @@
       "rows": 9793,
       "expected_cadence": "daily",
       "expected_max_lag_days": 2,
-      "days_behind": 5,
+      "days_behind": 6,
       "status": "stale",
       "note": "GKG quotations corpus (red-line subset)"
     },
@@ -148,7 +148,7 @@
       "rows": 236,
       "expected_cadence": "weekly",
       "expected_max_lag_days": 8,
-      "days_behind": 7,
+      "days_behind": 8,
       "status": "fresh",
       "note": "Recomputed Monday 08:00 UTC from coercive quotes"
     },
@@ -156,8 +156,8 @@
       "dataset": "CREA Russia fossil exports",
       "schema_table": "economic_data.crea_russia_fossil",
       "category": "economic_data",
-      "latest_date": "2026-07-18",
-      "rows": 12468,
+      "latest_date": "2026-07-19",
+      "rows": 12474,
       "expected_cadence": "daily",
       "expected_max_lag_days": 7,
       "days_behind": 2,
@@ -172,7 +172,7 @@
       "rows": 5239,
       "expected_cadence": "quarterly",
       "expected_max_lag_days": 120,
-      "days_behind": 262,
+      "days_behind": 263,
       "status": "stale",
       "note": "Kiel publishes quarterly"
     },
@@ -184,7 +184,7 @@
       "rows": 1891,
       "expected_cadence": "manual",
       "expected_max_lag_days": null,
-      "days_behind": 166,
+      "days_behind": 167,
       "status": "manual",
       "note": "Cloudflare blocks VPS \u2014 must be refreshed manually"
     },
@@ -196,7 +196,7 @@
       "rows": 69818,
       "expected_cadence": "daily",
       "expected_max_lag_days": 30,
-      "days_behind": 176,
+      "days_behind": 177,
       "status": "very_stale",
       "note": "Sanctions targets list"
     },
@@ -208,7 +208,7 @@
       "rows": 8329,
       "expected_cadence": "annual",
       "expected_max_lag_days": 540,
-      "days_behind": 566,
+      "days_behind": 567,
       "status": "lagging",
       "note": "Annual release ~April each year"
     },
@@ -220,7 +220,7 @@
       "rows": 1532,
       "expected_cadence": "annual",
       "expected_max_lag_days": 540,
-      "days_behind": 201,
+      "days_behind": 202,
       "status": "fresh",
       "note": "Annual release"
     },
@@ -232,7 +232,7 @@
       "rows": 1458,
       "expected_cadence": "monthly",
       "expected_max_lag_days": 60,
-      "days_behind": 50,
+      "days_behind": 51,
       "status": "fresh",
       "note": "HAPI internally-displaced persons"
     },
@@ -244,7 +244,7 @@
       "rows": 48516,
       "expected_cadence": "monthly",
       "expected_max_lag_days": 90,
-      "days_behind": 201,
+      "days_behind": 202,
       "status": "stale",
       "note": "HAPI refugees outflow"
     },
@@ -256,7 +256,7 @@
       "rows": 42951,
       "expected_cadence": "monthly",
       "expected_max_lag_days": 60,
-      "days_behind": -11,
+      "days_behind": -10,
       "status": "fresh",
       "note": "HAPI conflict events"
     },
@@ -268,7 +268,7 @@
       "rows": 2945,
       "expected_cadence": "annual",
       "expected_max_lag_days": 540,
-      "days_behind": 201,
+      "days_behind": 202,
       "status": "fresh",
       "note": "Annual UNHCR release"
     },
@@ -280,7 +280,7 @@
       "rows": 71,
       "expected_cadence": "monthly",
       "expected_max_lag_days": 60,
-      "days_behind": 1783,
+      "days_behind": 1784,
       "status": "very_stale",
       "note": "Known long-broken \u2014 has not updated since 2021"
     },
@@ -292,7 +292,7 @@
       "rows": 596,
       "expected_cadence": "monthly",
       "expected_max_lag_days": 60,
-      "days_behind": 141,
+      "days_behind": 142,
       "status": "stale",
       "note": "DeepState UA polygons"
     },
@@ -304,7 +304,7 @@
       "rows": 2072,
       "expected_cadence": "daily",
       "expected_max_lag_days": 7,
-      "days_behind": 5,
+      "days_behind": 6,
       "status": "fresh",
       "note": "Confirmed RRLS statements (matview)"
     },
@@ -316,7 +316,7 @@
       "rows": 369,
       "expected_cadence": "daily",
       "expected_max_lag_days": 7,
-      "days_behind": 21,
+      "days_behind": 22,
       "status": "stale",
       "note": "Confirmed NTS statements (matview)"
     }
